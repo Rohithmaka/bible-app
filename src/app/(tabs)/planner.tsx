@@ -108,6 +108,46 @@ export default function PlannerScreen() {
           </View>
         </View>
 
+        {/* 365-Day One-Year Bible Plan Feature Banner */}
+        <TouchableOpacity
+          onPress={() => {
+            triggerLightHaptic();
+            router.push('/one-year-planner' as any);
+          }}
+          activeOpacity={0.88}
+          style={{
+            backgroundColor: palette.card,
+            borderRadius: 20,
+            borderWidth: 1.5,
+            borderColor: palette.accentGreen,
+            padding: 18,
+            marginBottom: 20,
+          }}
+        >
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+              <View style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: palette.accentGreenLight, justifyContent: 'center', alignItems: 'center' }}>
+                <Sparkles size={22} color={palette.accentGreen} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 11, fontWeight: '700', color: palette.accentGold, textTransform: 'uppercase', letterSpacing: 1 }}>
+                  • 365-DAY BIBLE PLAN
+                </Text>
+                <Text style={{ fontSize: 17, fontWeight: '800', color: palette.textPrimary, marginTop: 1 }}>
+                  One-Year Bible Planner
+                </Text>
+                <Text style={{ fontSize: 13, color: palette.textSecondary, marginTop: 2 }}>
+                  Old & New Testament, Psalms & Proverbs daily
+                </Text>
+              </View>
+            </View>
+
+            <View style={{ backgroundColor: palette.accentGreen, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#FFFFFF' }}>Open Plan →</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+
         {/* Guided Journeys Section */}
         <Text style={{ fontSize: 18, fontWeight: '800', color: palette.textPrimary, marginBottom: 14 }}>
           Guided Daily Routines
