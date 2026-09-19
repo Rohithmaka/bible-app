@@ -79,6 +79,8 @@ export interface BibleState {
   enrolledPlanIds: string[];
   completedPlanDays: Record<string, number[]>;
   dailyStreak: number;
+  rewardPoints: number;
+  unlockedAchievements: string[];
   dailyTimeLogs: Record<string, DailyTimeLog>; // `${planId}:${dayNumber}` -> DailyTimeLog
 
   // Audio Player State
@@ -189,6 +191,8 @@ export const useBibleStore = create<BibleState>()(
         'gospels-30': [1, 2],
       },
       dailyStreak: 3,
+      rewardPoints: 350,
+      unlockedAchievements: ['first_step', 'flame_3'],
       dailyTimeLogs: {},
 
       isAudioPlaying: false,

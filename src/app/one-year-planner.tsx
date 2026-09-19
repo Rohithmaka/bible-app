@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   TextInput,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
@@ -65,6 +66,7 @@ export default function OneYearPlannerScreen() {
     togglePlanDay,
     dailyTimeLogs,
     setDailyTimeLog,
+    rewardPoints,
   } = useBibleStore();
 
   const isDark = themeMode === 'dark';
@@ -75,6 +77,14 @@ export default function OneYearPlannerScreen() {
   const [viewMode, setViewMode] = useState<ViewMode>('daily');
   const [spreadsheetSearch, setSpreadsheetSearch] = useState('');
   const [filterMode, setFilterMode] = useState<'all' | 'completed' | 'pending'>('all');
+
+  // Reward Modal state
+  const [isRewardModalOpen, setIsRewardModalOpen] = useState(false);
+  const [rewardDetails, setRewardDetails] = useState({
+    streakCount: 1,
+    pointsEarned: 100,
+    milestoneTitle: '',
+  });
 
   const planId = 'one-year-bible-plan';
   const completedDaysArray = completedPlanDays[planId] || [];
@@ -87,6 +97,25 @@ export default function OneYearPlannerScreen() {
   // Devotional verse based on day
   const dailyDevotional = DEVOTIONAL_VERSES[selectedDay % DEVOTIONAL_VERSES.length];
 
+  // STREAK FORMULA CALCULATION
+  const calculateStreak = () => {
+    if (completedDaysArray.length === 0) return 0;
+    const sorted = [...completedDaysArray].sort((a, b) => a - b);
+    const set = new Set(sorted);
+    const maxDay = Math.max(...sorted);
+    let streak = 0;
+    for (let d = maxDay; d >= 1; d--) {
+      if (set.has(d)) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    return streak;
+  };
+
+  const currentStreak = calculateStreak();
+
   // Helper for daily time logs
   const getDayLog = (dayNum: number) => {
     const key = `${planId}:${dayNum}`;
@@ -95,12 +124,29 @@ export default function OneYearPlannerScreen() {
 
   const handleToggleComplete = (dayNum: number = selectedDay) => {
     triggerSuccessHaptic();
+    const isCurrentlyDone = completedDaysArray.includes(dayNum);
     togglePlanDay(planId, dayNum);
-    if (!completedDaysArray.includes(dayNum)) {
-      Alert.alert(
-        'Walk Completed in Faith! ✝️',
-        `"Well done, good and faithful servant!" You have completed Day ${dayNum} of your Walk with Christ.`
-      );
+
+    if (!isCurrentlyDone) {
+      // Calculate updated streak & rewards
+      const updatedCount = completedDaysArray.length + 1;
+      const newStreak = currentStreak + 1;
+      let pts = 100; // Base 100 points
+      let milestone = '';
+
+      if (newStreak === 1) milestone = 'First Step of Faith ✝️';
+      else if (newStreak === 3) { pts += 50; milestone = 'Spark of Grace 🔥'; }
+      else if (newStreak === 7) { pts += 200; milestone = 'Flame of Faith 🕯️'; }
+      else if (newStreak === 14) { pts += 350; milestone = 'Shield of Truth 🛡️'; }
+      else if (newStreak === 30) { pts += 1000; milestone = 'Pillar of Grace 🏛️'; }
+      else if (newStreak === 100) { pts += 2500; milestone = 'Crown of Life 👑'; }
+
+      setRewardDetails({
+        streakCount: newStreak,
+        pointsEarned: pts,
+        milestoneTitle: milestone,
+      });
+      setIsRewardModalOpen(true);
     }
   };
 
@@ -148,16 +194,25 @@ export default function OneYearPlannerScreen() {
 
       {/* SACRED MOTIVATIONAL DEVOTIONAL HEADER BANNER */}
       <View style={{ backgroundColor: isDark ? '#171412' : '#FFF9F0', borderBottomWidth: 1, borderBottomColor: palette.border, paddingHorizontal: 18, paddingTop: 14, paddingBottom: 14 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 4 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(217, 119, 6, 0.14)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12 }}>
-            <Flame size={13} color="#D97706" />
-            <Text style={{ fontSize: 11, fontWeight: '800', color: '#D97706' }}>
-              {totalCompletedCount} Days Faithful
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          {/* Flame Streak Badge */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(217, 119, 6, 0.16)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(217, 119, 6, 0.3)' }}>
+            <Flame size={15} color="#D97706" />
+            <Text style={{ fontSize: 12, fontWeight: '800', color: '#D97706' }}>
+              🔥 {currentStreak}-Day Streak ({totalCompletedCount} Days)
+            </Text>
+          </View>
+
+          {/* Grace Points Badge */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: palette.accentGreenLight, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 14 }}>
+            <Sparkles size={14} color={palette.accentGreen} />
+            <Text style={{ fontSize: 12, fontWeight: '800', color: palette.accentGreen }}>
+              {totalCompletedCount * 100 + currentStreak * 25} Grace Pts
             </Text>
           </View>
         </View>
 
-        <Text style={{ fontSize: 13, fontStyle: 'italic', color: palette.textPrimary, marginTop: 2, lineHeight: 18 }}>
+        <Text style={{ fontSize: 13, fontStyle: 'italic', color: palette.textPrimary, marginTop: 6, lineHeight: 18 }}>
           "{dailyDevotional.verse}"
         </Text>
         <Text style={{ fontSize: 11, fontWeight: '700', color: palette.accentGold, marginTop: 2, textAlign: 'right' }}>
@@ -816,6 +871,88 @@ export default function OneYearPlannerScreen() {
           </View>
         </ScrollView>
       )}
+
+      {/* STREAK & REWARD CELEBRATION MODAL */}
+      <Modal visible={isRewardModalOpen} transparent animationType="slide">
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsRewardModalOpen(false)}>
+          <View
+            style={{
+              backgroundColor: palette.card,
+              maxWidth: 440,
+              width: '90%',
+              borderRadius: 24,
+              padding: 24,
+              alignItems: 'center',
+              borderWidth: 2,
+              borderColor: palette.accentGold,
+              elevation: 12,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 10 },
+              shadowOpacity: 0.3,
+              shadowRadius: 20,
+            }}
+            onStartShouldSetResponder={() => true}
+          >
+            {/* Header Badge */}
+            <View style={{ width: 68, height: 68, borderRadius: 34, backgroundColor: 'rgba(217, 119, 6, 0.18)', justifyContent: 'center', alignItems: 'center', marginBottom: 14 }}>
+              <Flame size={38} color="#D97706" />
+            </View>
+
+            <Text style={{ fontSize: 12, fontWeight: '800', color: palette.accentGold, textTransform: 'uppercase', letterSpacing: 1 }}>
+              STREAK REWARD UNLOCKED 🎉
+            </Text>
+
+            <Text style={{ fontSize: 24, fontWeight: '900', color: palette.textPrimary, textAlign: 'center', marginTop: 4 }}>
+              🔥 {rewardDetails.streakCount}-Day Faith Streak!
+            </Text>
+
+            {/* Points & Bonus Pill */}
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
+              <View style={{ backgroundColor: 'rgba(5, 150, 105, 0.14)', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 14, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Sparkles size={16} color={palette.accentGreen} />
+                <Text style={{ fontSize: 14, fontWeight: '800', color: palette.accentGreen }}>
+                  +{rewardDetails.pointsEarned} Grace Points
+                </Text>
+              </View>
+            </View>
+
+            {/* Achievement Card if unlocked */}
+            {rewardDetails.milestoneTitle ? (
+              <View style={{ width: '100%', backgroundColor: 'rgba(217, 119, 6, 0.12)', borderWidth: 1.5, borderColor: palette.accentGold, borderRadius: 16, padding: 14, marginTop: 16, alignItems: 'center' }}>
+                <Text style={{ fontSize: 11, fontWeight: '800', color: palette.accentGold, textTransform: 'uppercase', letterSpacing: 1 }}>
+                  🏆 NEW MILESTONE UNLOCKED!
+                </Text>
+                <Text style={{ fontSize: 16, fontWeight: '900', color: palette.textPrimary, marginTop: 3 }}>
+                  {rewardDetails.milestoneTitle}
+                </Text>
+              </View>
+            ) : null}
+
+            {/* Scripture Blessing */}
+            <Text style={{ fontSize: 13, fontStyle: 'italic', color: palette.textSecondary, textAlign: 'center', marginTop: 18, lineHeight: 19 }}>
+              "Well done, good and faithful servant... enter into the joy of your Lord." — Matthew 25:21
+            </Text>
+
+            {/* Dismiss Button */}
+            <TouchableOpacity
+              onPress={() => {
+                triggerLightHaptic();
+                setIsRewardModalOpen(false);
+              }}
+              style={{
+                width: '100%',
+                backgroundColor: palette.accentGold,
+                paddingVertical: 14,
+                borderRadius: 14,
+                alignItems: 'center',
+                marginTop: 20,
+              }}
+            >
+              <Text style={{ fontSize: 15, fontWeight: '800', color: '#FFFFFF' }}>Amen! Keep Walking in Faith →</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -899,5 +1036,12 @@ const styles = StyleSheet.create({
   },
   cell: {
     fontSize: 11,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
 });
