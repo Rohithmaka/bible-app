@@ -93,7 +93,7 @@ export default function TabsLayout() {
             <View
               style={{
                 alignItems: 'center',
-                justify: 'center',
+                justifyContent: 'center',
                 paddingHorizontal: 12,
                 paddingVertical: 3,
                 borderRadius: 14,
@@ -130,7 +130,7 @@ export default function TabsLayout() {
             <View
               style={{
                 alignItems: 'center',
-                justify: 'center',
+                justifyContent: 'center',
                 paddingHorizontal: 12,
                 paddingVertical: 3,
                 borderRadius: 14,
@@ -167,7 +167,7 @@ export default function TabsLayout() {
             <View
               style={{
                 alignItems: 'center',
-                justify: 'center',
+                justifyContent: 'center',
                 paddingHorizontal: 12,
                 paddingVertical: 3,
                 borderRadius: 14,
@@ -204,7 +204,7 @@ export default function TabsLayout() {
             <View
               style={{
                 alignItems: 'center',
-                justify: 'center',
+                justifyContent: 'center',
                 paddingHorizontal: 12,
                 paddingVertical: 3,
                 borderRadius: 14,
