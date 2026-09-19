@@ -576,152 +576,173 @@ export default function BibleReaderScreen() {
         </View>
       ) : null}
 
-      {/* MODAL 1: TWO-STEP LANGUAGE & VERSION PICKER (TOP-TO-BOTTOM FULL SCREEN) */}
-      <Modal visible={isTranslationMenuOpen} animationType="slide">
-        <SafeAreaView style={[styles.fullScreenModalContainer, { backgroundColor: palette.background }]}>
-          {/* Header */}
-          <View style={[styles.fullModalHeader, { borderBottomColor: palette.border }]}>
-            {pickerStep === 'version' ? (
+      {/* MODAL 1: TWO-STEP LANGUAGE & VERSION PICKER (VERTICAL SCROLL PROTECTION & MOBILE CONTAINER) */}
+      <Modal visible={isTranslationMenuOpen} animationType="slide" transparent>
+        <TouchableOpacity style={[styles.modalOverlay, { justifyContent: 'center', alignItems: 'center', padding: 16 }]} activeOpacity={1} onPress={() => setIsTranslationMenuOpen(false)}>
+          <View
+            style={[
+              styles.fullScreenModalContainer,
+              {
+                backgroundColor: palette.background,
+                maxWidth: 480,
+                width: '100%',
+                alignSelf: 'center',
+                maxHeight: '90%',
+                borderRadius: 24,
+                overflow: 'hidden',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 10 },
+                shadowOpacity: 0.25,
+                shadowRadius: 20,
+                elevation: 10,
+              },
+            ]}
+            onStartShouldSetResponder={() => true}
+          >
+            {/* Header */}
+            <View style={[styles.fullModalHeader, { borderBottomColor: palette.border }]}>
+              {pickerStep === 'version' ? (
+                <TouchableOpacity
+                  style={styles.modalBackBtn}
+                  onPress={() => {
+                    triggerLightHaptic();
+                    setPickerStep('language');
+                  }}
+                >
+                  <ChevronLeft size={22} color={palette.textPrimary} />
+                  <Text style={[styles.modalBackText, { color: palette.textPrimary }]}>Languages</Text>
+                </TouchableOpacity>
+              ) : (
+                <Text style={[styles.fullModalTitle, { color: palette.textPrimary }]}>
+                  {parallelMode ? 'Select Parallel Translation' : 'Select Language'}
+                </Text>
+              )}
+
               <TouchableOpacity
-                style={styles.modalBackBtn}
                 onPress={() => {
                   triggerLightHaptic();
-                  setPickerStep('language');
+                  setIsTranslationMenuOpen(false);
                 }}
+                style={styles.modalCloseIconBtn}
               >
-                <ChevronLeft size={22} color={palette.textPrimary} />
-                <Text style={[styles.modalBackText, { color: palette.textPrimary }]}>Languages</Text>
+                <X size={24} color={palette.textSecondary} />
               </TouchableOpacity>
+            </View>
+
+            {/* STEP 1: LANGUAGE SELECTION */}
+            {pickerStep === 'language' ? (
+              <View style={{ flex: 1, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 16 }}>
+                {/* Search Bar for Languages */}
+                <View style={[styles.langSearchBox, { backgroundColor: palette.card, borderColor: palette.border }]}>
+                  <Search size={18} color={palette.textSecondary} style={{ marginRight: 8 }} />
+                  <TextInput
+                    style={[styles.langSearchInput, { color: palette.textPrimary }]}
+                    placeholder="Search language..."
+                    placeholderTextColor={palette.textSecondary}
+                    value={langSearchQuery}
+                    onChangeText={setLangSearchQuery}
+                  />
+                  {langSearchQuery ? (
+                    <TouchableOpacity onPress={() => setLangSearchQuery('')}>
+                      <X size={18} color={palette.textSecondary} />
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+
+                <ScrollView style={{ flex: 1, marginTop: 12 }} showsVerticalScrollIndicator={false}>
+                  {filteredLanguages.map((lang) => {
+                    const isCurrentLang = lang.code.toLowerCase() === selectedLangCode.toLowerCase();
+                    const vCount = TRANSLATION_CATALOG.filter(
+                      (t) => t.languageCode.toLowerCase() === lang.code.toLowerCase()
+                    ).length;
+
+                    return (
+                      <TouchableOpacity
+                        key={lang.code}
+                        style={[
+                          styles.langItemRow,
+                          {
+                            borderBottomColor: palette.border,
+                            backgroundColor: isCurrentLang ? 'rgba(217, 119, 6, 0.08)' : 'transparent',
+                          },
+                        ]}
+                        onPress={() => {
+                          triggerLightHaptic();
+                          setSelectedLangCode(lang.code);
+                          setPickerStep('version');
+                        }}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.langNameText, { color: palette.textPrimary }]}>{lang.name}</Text>
+                          <Text style={[styles.langNativeText, { color: palette.textSecondary }]}>{lang.nativeName}</Text>
+                        </View>
+                        <View style={styles.langRightBadgeRow}>
+                          <Text style={[styles.langVersionCountText, { color: palette.textSecondary }]}>
+                            {vCount} {vCount === 1 ? 'version' : 'versions'}
+                          </Text>
+                          <ChevronRight size={18} color={palette.textSecondary} style={{ marginLeft: 6 }} />
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
             ) : (
-              <Text style={[styles.fullModalTitle, { color: palette.textPrimary }]}>
-                {parallelMode ? 'Select Parallel Translation' : 'Select Language'}
-              </Text>
-            )}
-
-            <TouchableOpacity
-              onPress={() => {
-                triggerLightHaptic();
-                setIsTranslationMenuOpen(false);
-              }}
-              style={styles.modalCloseIconBtn}
-            >
-              <X size={24} color={palette.textSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          {/* STEP 1: LANGUAGE SELECTION */}
-          {pickerStep === 'language' ? (
-            <View style={{ flex: 1, paddingHorizontal: 16, paddingTop: 12 }}>
-              {/* Search Bar for Languages */}
-              <View style={[styles.langSearchBox, { backgroundColor: palette.card, borderColor: palette.border }]}>
-                <Search size={18} color={palette.textSecondary} style={{ marginRight: 8 }} />
-                <TextInput
-                  style={[styles.langSearchInput, { color: palette.textPrimary }]}
-                  placeholder="Search language..."
-                  placeholderTextColor={palette.textSecondary}
-                  value={langSearchQuery}
-                  onChangeText={setLangSearchQuery}
-                />
-                {langSearchQuery ? (
-                  <TouchableOpacity onPress={() => setLangSearchQuery('')}>
-                    <X size={18} color={palette.textSecondary} />
+              /* STEP 2: VERSION SELECTION FOR SELECTED LANGUAGE */
+              <View style={{ flex: 1, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 16 }}>
+                <View style={[styles.selectedLangHeaderCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
+                  <Text style={[styles.selectedLangHeaderText, { color: palette.textSecondary }]}>
+                    Language:{' '}
+                    <Text style={{ fontWeight: '700', color: palette.textPrimary }}>
+                      {currentSelectedLangInfo?.name || selectedLangCode}
+                    </Text>{' '}
+                    {currentSelectedLangInfo?.nativeName ? `(${currentSelectedLangInfo.nativeName})` : ''}
+                  </Text>
+                  <TouchableOpacity onPress={() => setPickerStep('language')}>
+                    <Text style={styles.changeLangLinkText}>Change</Text>
                   </TouchableOpacity>
-                ) : null}
+                </View>
+
+                <ScrollView style={{ flex: 1, marginTop: 12 }} showsVerticalScrollIndicator={false}>
+                  {versionsForSelectedLang.map((t) => {
+                    const isSelected = parallelMode
+                      ? parallelTranslations.includes(t.translationId)
+                      : translation === t.translationId;
+
+                    return (
+                      <TouchableOpacity
+                        key={t.translationId}
+                        style={[
+                          styles.versionItemCard,
+                          {
+                            borderColor: isSelected ? '#D97706' : palette.border,
+                            backgroundColor: isSelected ? 'rgba(217, 119, 6, 0.1)' : palette.card,
+                          },
+                        ]}
+                        onPress={() => {
+                          triggerLightHaptic();
+                          if (parallelMode) {
+                            toggleParallelTranslation(t.translationId);
+                          } else {
+                            setTranslation(t.translationId);
+                            setIsTranslationMenuOpen(false);
+                          }
+                        }}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.versionAbbrText, { color: palette.textPrimary }]}>{t.abbreviation}</Text>
+                          <Text style={[styles.versionFullNameText, { color: palette.textSecondary }]}>{t.fullName}</Text>
+                        </View>
+
+                        {isSelected ? <Check size={22} color="#D97706" /> : null}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
               </View>
-
-              <ScrollView style={{ flex: 1, marginTop: 12 }} showsVerticalScrollIndicator={false}>
-                {filteredLanguages.map((lang) => {
-                  const isCurrentLang = lang.code.toLowerCase() === selectedLangCode.toLowerCase();
-                  const vCount = TRANSLATION_CATALOG.filter(
-                    (t) => t.languageCode.toLowerCase() === lang.code.toLowerCase()
-                  ).length;
-
-                  return (
-                    <TouchableOpacity
-                      key={lang.code}
-                      style={[
-                        styles.langItemRow,
-                        {
-                          borderBottomColor: palette.border,
-                          backgroundColor: isCurrentLang ? 'rgba(217, 119, 6, 0.08)' : 'transparent',
-                        },
-                      ]}
-                      onPress={() => {
-                        triggerLightHaptic();
-                        setSelectedLangCode(lang.code);
-                        setPickerStep('version');
-                      }}
-                    >
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.langNameText, { color: palette.textPrimary }]}>{lang.name}</Text>
-                        <Text style={[styles.langNativeText, { color: palette.textSecondary }]}>{lang.nativeName}</Text>
-                      </View>
-                      <View style={styles.langRightBadgeRow}>
-                        <Text style={[styles.langVersionCountText, { color: palette.textSecondary }]}>
-                          {vCount} {vCount === 1 ? 'version' : 'versions'}
-                        </Text>
-                        <ChevronRight size={18} color={palette.textSecondary} style={{ marginLeft: 6 }} />
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
-          ) : (
-            /* STEP 2: VERSION SELECTION FOR SELECTED LANGUAGE */
-            <View style={{ flex: 1, paddingHorizontal: 16, paddingTop: 12 }}>
-              <View style={[styles.selectedLangHeaderCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
-                <Text style={[styles.selectedLangHeaderText, { color: palette.textSecondary }]}>
-                  Language:{' '}
-                  <Text style={{ fontWeight: '700', color: palette.textPrimary }}>
-                    {currentSelectedLangInfo?.name || selectedLangCode}
-                  </Text>{' '}
-                  {currentSelectedLangInfo?.nativeName ? `(${currentSelectedLangInfo.nativeName})` : ''}
-                </Text>
-                <TouchableOpacity onPress={() => setPickerStep('language')}>
-                  <Text style={styles.changeLangLinkText}>Change</Text>
-                </TouchableOpacity>
-              </View>
-
-              <ScrollView style={{ flex: 1, marginTop: 12 }} showsVerticalScrollIndicator={false}>
-                {versionsForSelectedLang.map((t) => {
-                  const isSelected = parallelMode
-                    ? parallelTranslations.includes(t.translationId)
-                    : translation === t.translationId;
-
-                  return (
-                    <TouchableOpacity
-                      key={t.translationId}
-                      style={[
-                        styles.versionItemCard,
-                        {
-                          borderColor: isSelected ? '#D97706' : palette.border,
-                          backgroundColor: isSelected ? 'rgba(217, 119, 6, 0.1)' : palette.card,
-                        },
-                      ]}
-                      onPress={() => {
-                        triggerLightHaptic();
-                        if (parallelMode) {
-                          toggleParallelTranslation(t.translationId);
-                        } else {
-                          setTranslation(t.translationId);
-                          setIsTranslationMenuOpen(false);
-                        }
-                      }}
-                    >
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.versionAbbrText, { color: palette.textPrimary }]}>{t.abbreviation}</Text>
-                        <Text style={[styles.versionFullNameText, { color: palette.textSecondary }]}>{t.fullName}</Text>
-                      </View>
-
-                      {isSelected ? <Check size={22} color="#D97706" /> : null}
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
-          )}
-        </SafeAreaView>
+            )}
+          </View>
+        </TouchableOpacity>
       </Modal>
 
       {/* MODAL 2: BOOK & CHAPTER PICKER */}
