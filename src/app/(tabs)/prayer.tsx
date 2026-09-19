@@ -705,135 +705,144 @@ export default function PrayerScreen() {
 
       {/* Add Private Prayer Modal */}
       <Modal visible={isAddPrivateOpen} transparent animationType="slide">
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: palette.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ fontSize: 18, fontWeight: '700', color: palette.textPrimary }}>New Private Prayer</Text>
-              <TouchableOpacity onPress={() => setIsAddPrivateOpen(false)}>
-                <X size={20} color={palette.textSecondary} />
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end', alignItems: 'center' }}>
+          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => setIsAddPrivateOpen(false)} />
+          <View style={{ backgroundColor: palette.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderRadius: 24, padding: 24, width: '100%', maxWidth: 480, alignSelf: 'center', maxHeight: '90%' }}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: palette.textPrimary }}>New Private Prayer</Text>
+                <TouchableOpacity onPress={() => setIsAddPrivateOpen(false)}>
+                  <X size={20} color={palette.textSecondary} />
+                </TouchableOpacity>
+              </View>
+
+              <TextInput
+                placeholder="Prayer Title / Burden"
+                placeholderTextColor={palette.textMuted}
+                value={newTitle}
+                onChangeText={setNewTitle}
+                style={[styles.input, { backgroundColor: palette.inputBg, color: palette.textPrimary, borderColor: palette.border }]}
+              />
+
+              <TextInput
+                placeholder="Write your private prayer or intention..."
+                placeholderTextColor={palette.textMuted}
+                value={newContent}
+                onChangeText={setNewContent}
+                multiline
+                numberOfLines={4}
+                style={[styles.input, { backgroundColor: palette.inputBg, color: palette.textPrimary, borderColor: palette.border, height: 100, textAlignVertical: 'top' }]}
+              />
+
+              <TouchableOpacity onPress={handleSavePrivate} style={{ backgroundColor: palette.accentGreen, paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginTop: 10 }}>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: '#FFFFFF' }}>Save Private Prayer</Text>
               </TouchableOpacity>
-            </View>
-
-            <TextInput
-              placeholder="Prayer Title / Burden"
-              placeholderTextColor={palette.textMuted}
-              value={newTitle}
-              onChangeText={setNewTitle}
-              style={[styles.input, { backgroundColor: palette.inputBg, color: palette.textPrimary, borderColor: palette.border }]}
-            />
-
-            <TextInput
-              placeholder="Write your private prayer or intention..."
-              placeholderTextColor={palette.textMuted}
-              value={newContent}
-              onChangeText={setNewContent}
-              multiline
-              numberOfLines={4}
-              style={[styles.input, { backgroundColor: palette.inputBg, color: palette.textPrimary, borderColor: palette.border, height: 100, textAlignVertical: 'top' }]}
-            />
-
-            <TouchableOpacity onPress={handleSavePrivate} style={{ backgroundColor: palette.accentGreen, paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginTop: 10 }}>
-              <Text style={{ fontSize: 15, fontWeight: '700', color: '#FFFFFF' }}>Save Private Prayer</Text>
-            </TouchableOpacity>
+            </ScrollView>
           </View>
         </KeyboardAvoidingView>
       </Modal>
 
       {/* Add Community Prayer Modal */}
       <Modal visible={isAddCommunityOpen} transparent animationType="slide">
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: palette.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ fontSize: 18, fontWeight: '700', color: palette.textPrimary }}>Ask Community for Prayer</Text>
-              <TouchableOpacity onPress={() => setIsAddCommunityOpen(false)}>
-                <X size={20} color={palette.textSecondary} />
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end', alignItems: 'center' }}>
+          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => setIsAddCommunityOpen(false)} />
+          <View style={{ backgroundColor: palette.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderRadius: 24, padding: 24, width: '100%', maxWidth: 480, alignSelf: 'center', maxHeight: '90%' }}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: palette.textPrimary }}>Ask Community for Prayer</Text>
+                <TouchableOpacity onPress={() => setIsAddCommunityOpen(false)}>
+                  <X size={20} color={palette.textSecondary} />
+                </TouchableOpacity>
+              </View>
+
+              <TextInput
+                placeholder="Short Title of Your Burden"
+                placeholderTextColor={palette.textMuted}
+                value={newTitle}
+                onChangeText={setNewTitle}
+                style={[styles.input, { backgroundColor: palette.inputBg, color: palette.textPrimary, borderColor: palette.border }]}
+              />
+
+              <TextInput
+                placeholder="Describe what you are asking God for..."
+                placeholderTextColor={palette.textMuted}
+                value={newContent}
+                onChangeText={setNewContent}
+                multiline
+                numberOfLines={4}
+                style={[styles.input, { backgroundColor: palette.inputBg, color: palette.textPrimary, borderColor: palette.border, height: 100, textAlignVertical: 'top' }]}
+              />
+
+              <TouchableOpacity
+                onPress={() => setIsAnonymous(!isAnonymous)}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}
+              >
+                <View style={{ width: 20, height: 20, borderRadius: 4, borderWidth: 2, borderColor: palette.accentGreen, backgroundColor: isAnonymous ? palette.accentGreen : 'transparent', alignItems: 'center', justifyContent: 'center' }} />
+                <Text style={{ fontSize: 14, color: palette.textPrimary }}>Post Anonymously</Text>
               </TouchableOpacity>
-            </View>
 
-            <TextInput
-              placeholder="Short Title of Your Burden"
-              placeholderTextColor={palette.textMuted}
-              value={newTitle}
-              onChangeText={setNewTitle}
-              style={[styles.input, { backgroundColor: palette.inputBg, color: palette.textPrimary, borderColor: palette.border }]}
-            />
-
-            <TextInput
-              placeholder="Describe what you are asking God for..."
-              placeholderTextColor={palette.textMuted}
-              value={newContent}
-              onChangeText={setNewContent}
-              multiline
-              numberOfLines={4}
-              style={[styles.input, { backgroundColor: palette.inputBg, color: palette.textPrimary, borderColor: palette.border, height: 100, textAlignVertical: 'top' }]}
-            />
-
-            <TouchableOpacity
-              onPress={() => setIsAnonymous(!isAnonymous)}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}
-            >
-              <View style={{ width: 20, height: 20, borderRadius: 4, borderWidth: 2, borderColor: palette.accentGreen, backgroundColor: isAnonymous ? palette.accentGreen : 'transparent', alignItems: 'center', justifyContent: 'center' }} />
-              <Text style={{ fontSize: 14, color: palette.textPrimary }}>Post Anonymously</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={handleSaveCommunity} style={{ backgroundColor: palette.accentGreen, paddingVertical: 14, borderRadius: 12, alignItems: 'center' }}>
-              <Text style={{ fontSize: 15, fontWeight: '700', color: '#FFFFFF' }}>Share Request</Text>
-            </TouchableOpacity>
+              <TouchableOpacity onPress={handleSaveCommunity} style={{ backgroundColor: palette.accentGreen, paddingVertical: 14, borderRadius: 12, alignItems: 'center' }}>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: '#FFFFFF' }}>Share Request</Text>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </KeyboardAvoidingView>
       </Modal>
 
       {/* Add Testimonial / Story of Faith Modal */}
       <Modal visible={isAddTestimonialOpen} transparent animationType="slide">
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: palette.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Sparkles size={20} color={palette.accentGold} />
-                <Text style={{ fontSize: 18, fontWeight: '700', color: palette.textPrimary }}>Share Testimonial ✨</Text>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end', alignItems: 'center' }}>
+          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => setIsAddTestimonialOpen(false)} />
+          <View style={{ backgroundColor: palette.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderRadius: 24, padding: 24, width: '100%', maxWidth: 480, alignSelf: 'center', maxHeight: '90%' }}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Sparkles size={20} color={palette.accentGold} />
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: palette.textPrimary }}>Share Testimonial ✨</Text>
+                </View>
+                <TouchableOpacity onPress={() => setIsAddTestimonialOpen(false)}>
+                  <X size={20} color={palette.textSecondary} />
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity onPress={() => setIsAddTestimonialOpen(false)}>
-                <X size={20} color={palette.textSecondary} />
+
+              <TextInput
+                placeholder="Testimonial Title (e.g. Healed from Disease)"
+                placeholderTextColor={palette.textMuted}
+                value={testimonialTitle}
+                onChangeText={setTestimonialTitle}
+                style={[styles.input, { backgroundColor: palette.inputBg, color: palette.textPrimary, borderColor: palette.border }]}
+              />
+
+              <TextInput
+                placeholder="Tell your story of how God answered your prayer..."
+                placeholderTextColor={palette.textMuted}
+                value={testimonialStory}
+                onChangeText={setTestimonialStory}
+                multiline
+                numberOfLines={4}
+                style={[styles.input, { backgroundColor: palette.inputBg, color: palette.textPrimary, borderColor: palette.border, height: 90, textAlignVertical: 'top' }]}
+              />
+
+              <TextInput
+                placeholder="Scripture Anchor (optional e.g. Psalm 103:2)"
+                placeholderTextColor={palette.textMuted}
+                value={testimonialScripture}
+                onChangeText={setTestimonialScripture}
+                style={[styles.input, { backgroundColor: palette.inputBg, color: palette.textPrimary, borderColor: palette.border }]}
+              />
+
+              <TouchableOpacity
+                onPress={() => setIsAnonymous(!isAnonymous)}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}
+              >
+                <View style={{ width: 20, height: 20, borderRadius: 4, borderWidth: 2, borderColor: palette.accentGold, backgroundColor: isAnonymous ? palette.accentGold : 'transparent', alignItems: 'center', justifyContent: 'center' }} />
+                <Text style={{ fontSize: 14, color: palette.textPrimary }}>Post Anonymously</Text>
               </TouchableOpacity>
-            </View>
 
-            <TextInput
-              placeholder="Testimonial Title (e.g. Healed from Disease)"
-              placeholderTextColor={palette.textMuted}
-              value={testimonialTitle}
-              onChangeText={setTestimonialTitle}
-              style={[styles.input, { backgroundColor: palette.inputBg, color: palette.textPrimary, borderColor: palette.border }]}
-            />
-
-            <TextInput
-              placeholder="Tell your story of how God answered your prayer..."
-              placeholderTextColor={palette.textMuted}
-              value={testimonialStory}
-              onChangeText={setTestimonialStory}
-              multiline
-              numberOfLines={4}
-              style={[styles.input, { backgroundColor: palette.inputBg, color: palette.textPrimary, borderColor: palette.border, height: 90, textAlignVertical: 'top' }]}
-            />
-
-            <TextInput
-              placeholder="Scripture Anchor (optional e.g. Psalm 103:2)"
-              placeholderTextColor={palette.textMuted}
-              value={testimonialScripture}
-              onChangeText={setTestimonialScripture}
-              style={[styles.input, { backgroundColor: palette.inputBg, color: palette.textPrimary, borderColor: palette.border }]}
-            />
-
-            <TouchableOpacity
-              onPress={() => setIsAnonymous(!isAnonymous)}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}
-            >
-              <View style={{ width: 20, height: 20, borderRadius: 4, borderWidth: 2, borderColor: palette.accentGold, backgroundColor: isAnonymous ? palette.accentGold : 'transparent', alignItems: 'center', justifyContent: 'center' }} />
-              <Text style={{ fontSize: 14, color: palette.textPrimary }}>Post Anonymously</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={handleSaveTestimonial} style={{ backgroundColor: palette.accentGold, paddingVertical: 14, borderRadius: 12, alignItems: 'center' }}>
-              <Text style={{ fontSize: 15, fontWeight: '700', color: '#FFFFFF' }}>Post Praise Report ✨</Text>
-            </TouchableOpacity>
+              <TouchableOpacity onPress={handleSaveTestimonial} style={{ backgroundColor: palette.accentGold, paddingVertical: 14, borderRadius: 12, alignItems: 'center' }}>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: '#FFFFFF' }}>Post Praise Report ✨</Text>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </KeyboardAvoidingView>
       </Modal>
@@ -841,7 +850,8 @@ export default function PrayerScreen() {
       {/* Answered Prayer Note Modal */}
       <Modal visible={isAnswerModalOpen} transparent animationType="fade">
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
-          <View style={{ backgroundColor: palette.card, borderRadius: 20, width: '85%', padding: 24, borderWidth: 1, borderColor: palette.cardBorder }}>
+          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => setIsAnswerModalOpen(false)} />
+          <View style={{ backgroundColor: palette.card, borderRadius: 20, width: '90%', maxWidth: 440, padding: 24, borderWidth: 1, borderColor: palette.cardBorder, alignSelf: 'center' }}>
             <Text style={{ fontSize: 18, fontWeight: '700', color: palette.textPrimary, marginBottom: 6 }}>
               Prayer Answered 🙌
             </Text>
