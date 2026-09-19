@@ -11,6 +11,11 @@ import {
   publishCommunityPrayerToCloud, 
   incrementCloudIPrayedCount 
 } from '../../services/cloudSyncService';
+import {
+  subscribeToSupabaseCommunityPrayers,
+  publishCommunityPrayerToSupabase,
+  incrementSupabaseIPrayedCount,
+} from '../../services/supabaseSyncService';
 import { Heart, Plus, Lock, Globe, X, Users, ShieldAlert, UserPlus, UserCheck, Flag, Hand } from 'lucide-react-native';
 
 export default function PrayerScreen() {
@@ -37,12 +42,24 @@ export default function PrayerScreen() {
     reportPrayerRequest,
   } = useSpiritualStore();
 
-  // Cloud Real-Time Listener
+  // Cloud Real-Time Listener (Supabase + Firebase Fallback)
   useEffect(() => {
-    const unsubscribe = subscribeToCloudCommunityPrayers((cloudPrayers) => {
-      useSpiritualStore.setState({ communityPrayers: cloudPrayers });
+    const unsubscribeSupabase = subscribeToSupabaseCommunityPrayers((supabasePrayers) => {
+      if (supabasePrayers.length > 0) {
+        useSpiritualStore.setState({ communityPrayers: supabasePrayers });
+      }
     });
-    return () => unsubscribe();
+
+    const unsubscribeFirebase = subscribeToCloudCommunityPrayers((cloudPrayers) => {
+      if (cloudPrayers.length > 0) {
+        useSpiritualStore.setState({ communityPrayers: cloudPrayers });
+      }
+    });
+
+    return () => {
+      unsubscribeSupabase();
+      unsubscribeFirebase();
+    };
   }, []);
 
   // Modals state
@@ -83,6 +100,7 @@ export default function PrayerScreen() {
       category: newCategory,
     };
     addCommunityPrayer(payload);
+    await publishCommunityPrayerToSupabase(payload);
     await publishCommunityPrayerToCloud(payload);
     setNewTitle('');
     setNewContent('');
@@ -101,6 +119,7 @@ export default function PrayerScreen() {
   const handlePrayNow = (id: string) => {
     triggerMediumHaptic();
     incrementIPrayed(id);
+    incrementSupabaseIPrayedCount(id);
     incrementCloudIPrayedCount(id);
     router.push({ pathname: '/pray-now' as any, params: { id } });
   };
