@@ -30,8 +30,8 @@ const verseCache: Record<string, Verse[]> = {};
  */
 
 function getBookIndex(bookId: string): number {
-  const b = BIBLE_BOOKS.find((item) => item.id.toLowerCase() === bookId.toLowerCase());
-  return b ? b.order : 1;
+  const index = BIBLE_BOOKS.findIndex((item) => item.id.toLowerCase() === bookId.toLowerCase());
+  return index >= 0 ? index + 1 : 1;
 }
 
 /**
