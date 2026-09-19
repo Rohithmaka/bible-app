@@ -84,7 +84,7 @@ export default function HomeScreen() {
         </View>
 
         {/* Start Journey Primary CTA */}
-        <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+        <View style={{ paddingHorizontal: 20, marginBottom: 16 }}>
           <TouchableOpacity
             onPress={handleStartJourney}
             activeOpacity={0.85}
@@ -124,6 +124,84 @@ export default function HomeScreen() {
               <ArrowRight size={22} color="#FFFFFF" />
             </View>
           </TouchableOpacity>
+        </View>
+
+        {/* TODAY'S ROUTINE COMPLETION CHECKLIST */}
+        <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+          <View style={{ backgroundColor: palette.card, borderRadius: 18, borderWidth: 1, borderColor: isMorningDone ? palette.accentGreen : palette.cardBorder, padding: 18 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <CheckCircle2 size={20} color={isMorningDone ? palette.accentGreen : palette.accentGold} />
+                <Text style={{ fontSize: 16, fontWeight: '800', color: palette.textPrimary }}>
+                  Today's Completion Checklist
+                </Text>
+              </View>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: isMorningDone ? palette.accentGreen : palette.accentGold }}>
+                {isMorningDone ? '100% COMPLETE 🎉' : 'IN PROGRESS'}
+              </Text>
+            </View>
+
+            {/* Checklist Items */}
+            <View style={{ gap: 10 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: palette.inputBg, padding: 10, borderRadius: 10 }}>
+                <CheckCircle2 size={18} color={isMorningDone ? palette.accentGreen : palette.textMuted} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: palette.textPrimary }}>
+                    1. Morning Scripture & Meditation
+                  </Text>
+                  <Text style={{ fontSize: 11, color: palette.textSecondary }}>
+                    {isMorningDone ? 'Completed for today' : 'Pending — Tap Start Journey'}
+                  </Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                onPress={() => {
+                  triggerLightHaptic();
+                  router.push('/one-year-planner' as any);
+                }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: palette.inputBg, padding: 10, borderRadius: 10 }}
+              >
+                <CheckCircle2 size={18} color={palette.accentGreen} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: palette.textPrimary }}>
+                    2. 365-Day Bible Reading Portion
+                  </Text>
+                  <Text style={{ fontSize: 11, color: palette.accentGreen }}>
+                    Day Portion Selected • Tap to view
+                  </Text>
+                </View>
+                <ArrowRight size={14} color={palette.accentGreen} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => {
+                  triggerLightHaptic();
+                  router.push('/pray-now' as any);
+                }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: palette.inputBg, padding: 10, borderRadius: 10 }}
+              >
+                <CheckCircle2 size={18} color={palette.accentGold} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: palette.textPrimary }}>
+                    3. Heart Reflection & Guided Prayer
+                  </Text>
+                  <Text style={{ fontSize: 11, color: palette.textSecondary }}>
+                    Tap to open prayer chamber
+                  </Text>
+                </View>
+                <ArrowRight size={14} color={palette.accentGold} />
+              </TouchableOpacity>
+            </View>
+
+            {isMorningDone && (
+              <View style={{ marginTop: 12, padding: 10, borderRadius: 10, backgroundColor: palette.accentGreenLight, alignItems: 'center' }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: palette.accentGreen }}>
+                  🎉 Amen! Today's daily walk is complete. Keep growing in grace!
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
 
         {/* 1. TODAY'S SCRIPTURE */}
