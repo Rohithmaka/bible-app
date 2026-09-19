@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, KeyboardAvoidingView, Platform, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useBibleStore } from '../../store/useBibleStore';
 import { useSpiritualStore, PrayerCategory } from '../../store/useSpiritualStore';
 import { SpiritualTheme } from '../../constants/spiritualTheme';
@@ -74,6 +74,22 @@ export default function PrayerScreen() {
   const [newCategory, setNewCategory] = useState<PrayerCategory>('family');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [answerNote, setAnswerNote] = useState('');
+
+  // Handle incoming scripture parameters from "Pray About This" action
+  const searchParams = useLocalSearchParams();
+
+  useEffect(() => {
+    if (searchParams.scriptureRef || searchParams.action === 'create') {
+      const ref = searchParams.scriptureRef as string;
+      const text = searchParams.scriptureText as string;
+      if (ref) {
+        setNewTitle(`Prayer for ${ref}`);
+        setNewContent(`"${text || ''}"\n\nPlease pray for...`);
+      }
+      setActiveTab('COMMUNITY');
+      setIsAddCommunityOpen(true);
+    }
+  }, [searchParams.scriptureRef, searchParams.scriptureText, searchParams.action]);
 
   // Handlers
   const handleSavePrivate = () => {

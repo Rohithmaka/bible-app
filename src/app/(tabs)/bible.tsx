@@ -1,16 +1,43 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Modal, Clipboard, ActivityIndicator, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Modal,
+  Clipboard,
+  ActivityIndicator,
+  TextInput,
+  StyleSheet,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useBibleStore, HighlightColor } from '../../store/useBibleStore';
+import { useBibleStore, HighlightColor, ThemeMode } from '../../store/useBibleStore';
 import { useSpiritualStore } from '../../store/useSpiritualStore';
-import { BIBLE_BOOKS, getChapterVerses, Verse } from '../../data/bibleData';
+import { BIBLE_BOOKS, Verse } from '../../data/bibleData';
 import { getNextChapterLocation, getPrevChapterLocation, formatVerseShareText } from '../../engine/bibleEngine';
-import { fetchChapterVerses, AVAILABLE_TRANSLATIONS, TranslationMetadata } from '../../engine/multiBibleService';
-import { SpiritualTheme, ScriptureTypography } from '../../constants/spiritualTheme';
+import { fetchChapterVerses, fetchParallelChapterVerses, ParallelChapterResult } from '../../engine/multiBibleService';
+import { TRANSLATION_CATALOG, getTranslationInfo, SUPPORTED_LANGUAGES } from '../../engine/translationCatalog';
+import { SpiritualTheme } from '../../constants/spiritualTheme';
 import { triggerLightHaptic, triggerMediumHaptic, triggerSuccessHaptic } from '../../services/mobileHaptics';
 import { shareScriptureVerse } from '../../services/mobileShare';
-import { ChevronLeft, ChevronRight, BookOpen, Sparkles, Bookmark as BookmarkIcon, Copy, Brain, Type, X, Share2, Globe, Check } from 'lucide-react-native';
+import {
+  ChevronLeft,
+  ChevronRight,
+  BookOpen,
+  Search,
+  Bookmark as BookmarkIcon,
+  Copy,
+  Type,
+  X,
+  Share2,
+  Columns,
+  Info,
+  HeartHandshake,
+  Check,
+  Edit3,
+  SlidersHorizontal,
+} from 'lucide-react-native';
 
 export default function BibleReaderScreen() {
   const router = useRouter();
@@ -21,54 +48,98 @@ export default function BibleReaderScreen() {
     activeChapter,
     selectedVerseNumbers,
     translation,
+    parallelMode,
+    parallelTranslations,
     themeMode,
     fontSize,
+    lineSpacing,
+    verseSpacing,
     showVerseNumbers,
     highlights,
     bookmarks,
+    notes,
     setLocation,
     toggleVerseSelection,
     clearVerseSelection,
     setTranslation,
+    setParallelMode,
+    toggleParallelTranslation,
+    setThemeMode,
+    setFontSize,
+    setLineSpacing,
+    setVerseSpacing,
     setHighlight,
     removeHighlight,
     addBookmark,
     removeBookmark,
     isBookmarked,
-    setFontSize,
+    saveNote,
   } = useBibleStore();
 
   const { addMemoryVerse } = useSpiritualStore();
-  const isDark = themeMode === 'dark';
-  const palette = isDark ? SpiritualTheme.dark : SpiritualTheme.light;
 
-  const [isFontMenuOpen, setIsFontMenuOpen] = useState(false);
+  // Palette handling based on themeMode
+  const isDark = themeMode === 'dark';
+  const isSepia = themeMode === 'sepia';
+  const palette = isSepia
+    ? {
+        ...SpiritualTheme.light,
+        background: '#FBF0D9',
+        card: '#F3E5C8',
+        cardBorder: '#E2D2B4',
+        textPrimary: '#4A3B2C',
+        textSecondary: '#7C6752',
+        border: '#E2D2B4',
+      }
+    : isDark
+    ? SpiritualTheme.dark
+    : SpiritualTheme.light;
+
+  // Modals state
   const [isTranslationMenuOpen, setIsTranslationMenuOpen] = useState(false);
+  const [isBookPickerOpen, setIsBookPickerOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
+  const [noteContent, setNoteContent] = useState('');
+
+  // Verses state
   const [verses, setVerses] = useState<Verse[]>([]);
+  const [parallelVerses, setParallelVerses] = useState<ParallelChapterResult[]>([]);
   const [isLoadingVerses, setIsLoadingVerses] = useState(false);
 
   // Read params if passed from navigation
   const currentBookId = (searchParams.bookId as string) || activeBookId;
   const currentChapter = searchParams.chapter ? parseInt(searchParams.chapter as string, 10) : activeChapter;
-
   const currentBook = BIBLE_BOOKS.find((b) => b.id === currentBookId) || BIBLE_BOOKS[0];
 
-  // Load verses whenever book, chapter, or translation changes
+  // Load primary / parallel verses
   useEffect(() => {
     let isMounted = true;
     setIsLoadingVerses(true);
 
-    fetchChapterVerses(currentBook.id, currentBook.name, currentChapter, translation).then((loaded) => {
-      if (isMounted) {
-        setVerses(loaded);
-        setIsLoadingVerses(false);
-      }
-    });
+    if (parallelMode) {
+      fetchParallelChapterVerses(currentBook.id, currentBook.name, currentChapter, parallelTranslations).then((parallelData) => {
+        if (isMounted) {
+          setParallelVerses(parallelData);
+          if (parallelData.length > 0) {
+            setVerses(parallelData[0].verses);
+          }
+          setIsLoadingVerses(false);
+        }
+      });
+    } else {
+      fetchChapterVerses(currentBook.id, currentBook.name, currentChapter, translation).then((loaded) => {
+        if (isMounted) {
+          setVerses(loaded);
+          setIsLoadingVerses(false);
+        }
+      });
+    }
 
     return () => {
       isMounted = false;
     };
-  }, [currentBook.id, currentChapter, translation]);
+  }, [currentBook.id, currentChapter, translation, parallelMode, parallelTranslations]);
 
   const handleNextChapter = () => {
     triggerLightHaptic();
@@ -102,6 +173,7 @@ export default function BibleReaderScreen() {
     if (selectedVerseNumbers.length === 0) return;
     const vNum = selectedVerseNumbers[0];
     const vText = verses.find((v) => v.verse === vNum)?.text || '';
+
     if (isBookmarked(currentBook.id, currentChapter, vNum)) {
       const bm = bookmarks.find((b) => b.bookId === currentBook.id && b.chapter === currentChapter && b.verse === vNum);
       if (bm) removeBookmark(bm.id);
@@ -147,387 +219,906 @@ export default function BibleReaderScreen() {
     clearVerseSelection();
   };
 
-  const handleAddToMemory = () => {
-    triggerSuccessHaptic();
-    selectedVerses.forEach((v) => {
-      addMemoryVerse({
-        verseKey: `${currentBook.id}:${currentChapter}:${v.verse}`,
-        bookName: currentBook.name,
-        chapter: currentChapter,
-        verse: v.verse,
-        text: v.text,
-        category: 'Personal Study',
-      });
-    });
-    clearVerseSelection();
-  };
+  const handlePrayAboutThis = () => {
+    triggerMediumHaptic();
+    if (selectedVerses.length === 0) return;
+    const primaryVerse = selectedVerses[0];
 
-  const handleLaunchStudy = () => {
-    triggerLightHaptic();
-    const primaryVerse = selectedVerseNumbers[0] || 1;
-    clearVerseSelection();
-    router.push({
-      pathname: '/study-workspace' as any,
-      params: { bookId: currentBook.id, chapter: currentChapter, verse: primaryVerse },
-    });
-  };
+    const verseRef = `${currentBook.name} ${currentChapter}:${primaryVerse.verse}`;
+    const verseText = primaryVerse.text;
 
-  const handleLaunchNote = () => {
-    triggerLightHaptic();
-    const primaryVerse = selectedVerseNumbers[0] || 1;
-    const vText = verses.find((v) => v.verse === primaryVerse)?.text || '';
     clearVerseSelection();
+
+    // Navigate to Prayer Tab with verse context prefilled
     router.push({
-      pathname: '/note-editor',
+      pathname: '/(tabs)/prayer',
       params: {
-        bookId: currentBook.id,
-        bookName: currentBook.name,
-        chapter: currentChapter,
-        verse: primaryVerse,
-        verseText: vText,
+        action: 'create',
+        scriptureRef: verseRef,
+        scriptureText: verseText,
       },
     });
   };
 
-  const fontSizePx = ScriptureTypography.fontSize[fontSize] || 18;
+  const handleSaveNote = () => {
+    if (selectedVerseNumbers.length === 0 || !noteContent.trim()) return;
+    const vNum = selectedVerseNumbers[0];
+    const vText = verses.find((v) => v.verse === vNum)?.text || '';
+
+    saveNote(currentBook.id, currentBook.name, currentChapter, vNum, vText, noteContent.trim());
+    setNoteContent('');
+    setIsNoteModalOpen(false);
+    clearVerseSelection();
+    triggerSuccessHaptic();
+  };
+
+  // Typography Styles based on settings
+  const getFontSizeStyle = () => {
+    switch (fontSize) {
+      case 'sm':
+        return 15;
+      case 'lg':
+        return 19;
+      case 'xl':
+        return 22;
+      default:
+        return 17; // md
+    }
+  };
+
+  const getLineHeightStyle = () => {
+    const base = getFontSizeStyle();
+    switch (lineSpacing) {
+      case 'normal':
+        return base * 1.4;
+      case 'spacious':
+        return base * 1.9;
+      default:
+        return base * 1.6; // relaxed
+    }
+  };
+
+  const getVerseMarginStyle = () => {
+    switch (verseSpacing) {
+      case 'compact':
+        return 6;
+      case 'spacious':
+        return 18;
+      default:
+        return 12; // normal
+    }
+  };
+
+  const currentTranslationInfo = getTranslationInfo(translation);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: palette.background }} edges={['top', 'left', 'right']}>
-      {/* Header Bar */}
-      <View
-        style={{
-          paddingTop: 12,
-          paddingHorizontal: 16,
-          paddingBottom: 12,
-          backgroundColor: palette.card,
-          borderBottomWidth: 1,
-          borderBottomColor: palette.border,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <TouchableOpacity
-          onPress={() => {
-            triggerLightHaptic();
-            router.push('/book-selector');
-          }}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: palette.inputBg, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 }}
-        >
-          <BookOpen size={16} color={palette.accentGreen} />
-          <Text style={{ fontSize: 16, fontWeight: '700', color: palette.textPrimary }}>
+    <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]}>
+      {/* Top Header Controls */}
+      <View style={[styles.header, { borderBottomColor: palette.border }]}>
+        <TouchableOpacity style={styles.headerPill} onPress={() => setIsTranslationMenuOpen(true)}>
+          <Text style={[styles.headerPillText, { color: palette.textPrimary }]}>{translation}</Text>
+          {parallelMode ? <Columns size={12} color="#D97706" style={{ marginLeft: 4 }} /> : null}
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.headerBookButton} onPress={() => setIsBookPickerOpen(true)}>
+          <Text style={[styles.headerBookTitle, { color: palette.textPrimary }]}>
             {currentBook.name} {currentChapter}
           </Text>
         </TouchableOpacity>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          {/* 15 Translation Selector Launcher */}
-          <TouchableOpacity
-            onPress={() => {
-              triggerLightHaptic();
-              setIsTranslationMenuOpen(true);
-            }}
-            style={{ backgroundColor: palette.accentGreenLight, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 4 }}
-          >
-            <Globe size={14} color={palette.accentGreen} />
-            <Text style={{ fontSize: 12, fontWeight: '700', color: palette.accentGreen, textTransform: 'uppercase' }}>
-              {translation}
-            </Text>
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.iconButton} onPress={() => setParallelMode(!parallelMode)}>
+            <Columns size={20} color={parallelMode ? '#D97706' : palette.textPrimary} />
           </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => {
-              triggerLightHaptic();
-              setIsFontMenuOpen(true);
-            }}
-            style={{ padding: 8, borderRadius: 8, backgroundColor: palette.inputBg }}
-          >
-            <Type size={18} color={palette.textPrimary} />
+          <TouchableOpacity style={styles.iconButton} onPress={() => router.push('/bible-search')}>
+            <Search size={20} color={palette.textPrimary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.iconButton} onPress={() => setIsSettingsOpen(true)}>
+            <SlidersHorizontal size={20} color={palette.textPrimary} />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Scripture Reading Content */}
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 120 }}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={{ fontSize: 24, fontWeight: '800', color: palette.textPrimary, marginBottom: 16, textAlign: 'center' }}>
-          {currentBook.name} {currentChapter}
-        </Text>
+      {/* Main Chapter Reader Content */}
+      <ScrollView contentContainerStyle={styles.readerContent} showsVerticalScrollIndicator={false}>
+        {/* Chapter Header Title */}
+        <View style={styles.chapterHeaderContainer}>
+          <Text style={[styles.chapterHeaderTitle, { color: palette.textPrimary }]}>
+            {currentBook.name} {currentChapter}
+          </Text>
+
+          {currentTranslationInfo ? (
+            <View style={styles.licenseNoticeRow}>
+              <Text style={[styles.licenseNoticeText, { color: palette.textSecondary }]}>
+                {currentTranslationInfo.fullName} • {currentTranslationInfo.licenseType}
+              </Text>
+              <TouchableOpacity onPress={() => router.push('/bible-info')}>
+                <Info size={14} color="#D97706" />
+              </TouchableOpacity>
+            </View>
+          ) : null}
+        </View>
 
         {isLoadingVerses ? (
-          <View style={{ padding: 40, alignItems: 'center' }}>
-            <ActivityIndicator size="large" color={palette.accentGreen} />
-            <Text style={{ fontSize: 14, color: palette.textSecondary, marginTop: 12 }}>
-              Loading {translation.toUpperCase()} scripture text...
-            </Text>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#D97706" />
+            <Text style={[styles.loadingText, { color: palette.textSecondary }]}>Loading Scripture...</Text>
+          </View>
+        ) : parallelMode ? (
+          /* PARALLEL BIBLE VIEW (2 - 4 Translations Side-by-Side per verse) */
+          <View style={styles.parallelContainer}>
+            {verses.map((vItem) => (
+              <View
+                key={`par-v-${vItem.verse}`}
+                style={[
+                  styles.parallelVerseBlock,
+                  { borderBottomColor: palette.border, marginBottom: getVerseMarginStyle() },
+                ]}
+              >
+                <View style={styles.verseNumberBadge}>
+                  <Text style={styles.verseNumberText}>{vItem.verse}</Text>
+                </View>
+
+                {parallelVerses.map((pCol) => {
+                  const pVerse = pCol.verses.find((pv) => pv.verse === vItem.verse);
+                  return (
+                    <View key={`col-${pCol.translationId}-${vItem.verse}`} style={styles.parallelCol}>
+                      <Text style={styles.parallelTransTag}>{pCol.translationId}</Text>
+                      <Text
+                        style={[
+                          styles.verseText,
+                          {
+                            fontSize: getFontSizeStyle() * 0.95,
+                            lineHeight: getLineHeightStyle() * 0.95,
+                            color: palette.textPrimary,
+                          },
+                        ]}
+                      >
+                        {pVerse ? pVerse.text : '...'}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            ))}
           </View>
         ) : (
-          verses.map((v) => {
-            const isSelected = selectedVerseNumbers.includes(v.verse);
-            const vKey = `${currentBook.id}:${currentChapter}:${v.verse}`;
-            const highlightItem = highlights[vKey];
+          /* SINGLE BIBLE VIEW */
+          <View style={styles.singleVerseContainer}>
+            {verses.map((v) => {
+              const isSelected = selectedVerseNumbers.includes(v.verse);
+              const vKey = `${currentBook.id}:${currentChapter}:${v.verse}`;
+              const highlight = highlights[vKey];
+              const note = notes[vKey];
+              const bookmarked = isBookmarked(currentBook.id, currentChapter, v.verse);
 
-            let highlightBg = 'transparent';
-            if (highlightItem) {
-              if (highlightItem.color === 'gold') highlightBg = palette.highlightGold;
-              if (highlightItem.color === 'sapphire') highlightBg = palette.highlightSapphire;
-              if (highlightItem.color === 'emerald') highlightBg = palette.highlightEmerald;
-              if (highlightItem.color === 'rose') highlightBg = palette.highlightRose;
-              if (highlightItem.color === 'purple') highlightBg = palette.highlightPurple;
-            }
+              let bgColor = 'transparent';
+              if (isSelected) bgColor = 'rgba(217, 119, 6, 0.15)';
+              else if (highlight) {
+                switch (highlight.color) {
+                  case 'gold':
+                    bgColor = 'rgba(234, 179, 8, 0.25)';
+                    break;
+                  case 'emerald':
+                    bgColor = 'rgba(16, 185, 129, 0.25)';
+                    break;
+                  case 'rose':
+                    bgColor = 'rgba(244, 63, 94, 0.25)';
+                    break;
+                  case 'purple':
+                    bgColor = 'rgba(168, 85, 247, 0.25)';
+                    break;
+                  default:
+                    bgColor = 'rgba(59, 130, 246, 0.25)';
+                    break;
+                }
+              }
 
-            return (
-              <TouchableOpacity
-                key={v.verse}
-                onPress={() => handleVersePress(v.verse)}
-                activeOpacity={0.7}
-                style={{
-                  backgroundColor: isSelected ? palette.accentGreenLight : highlightBg,
-                  borderRadius: 8,
-                  paddingVertical: 6,
-                  paddingHorizontal: 8,
-                  marginBottom: 6,
-                  borderLeftWidth: isSelected ? 3 : 0,
-                  borderLeftColor: palette.accentGreen,
-                }}
-              >
-                <Text
-                  style={{
-                    fontFamily: ScriptureTypography.fontFamilySerif,
-                    fontSize: fontSizePx,
-                    lineHeight: fontSizePx * ScriptureTypography.lineHeightRatio,
-                    color: palette.textPrimary,
-                  }}
+              return (
+                <TouchableOpacity
+                  key={`v-${v.verse}`}
+                  activeOpacity={0.7}
+                  onPress={() => handleVersePress(v.verse)}
+                  style={[
+                    styles.verseRow,
+                    {
+                      backgroundColor: bgColor,
+                      marginBottom: getVerseMarginStyle(),
+                      borderRadius: isSelected || highlight ? 8 : 0,
+                    },
+                  ]}
                 >
-                  {showVerseNumbers && (
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: palette.accentGold, fontFamily: 'sans-serif' }}>
+                  {showVerseNumbers ? (
+                    <Text style={[styles.verseNumber, { color: isSelected ? '#D97706' : palette.textSecondary }]}>
                       {v.verse}{' '}
                     </Text>
-                  )}
-                  {v.text}
-                </Text>
-              </TouchableOpacity>
-            );
-          })
+                  ) : null}
+
+                  <Text
+                    style={[
+                      styles.verseText,
+                      {
+                        fontSize: getFontSizeStyle(),
+                        lineHeight: getLineHeightStyle(),
+                        color: palette.textPrimary,
+                      },
+                    ]}
+                  >
+                    {v.text}
+                  </Text>
+
+                  {bookmarked ? <BookmarkIcon size={12} color="#D97706" style={styles.indicatorIcon} /> : null}
+                  {note ? <Edit3 size={12} color="#2563EB" style={styles.indicatorIcon} /> : null}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         )}
 
-        {/* Chapter Navigation Buttons */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 30, paddingTop: 16, borderTopWidth: 1, borderTopColor: palette.border }}>
-          <TouchableOpacity
-            onPress={handlePrevChapter}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, padding: 12, backgroundColor: palette.card, borderRadius: 12, borderWidth: 1, borderColor: palette.cardBorder }}
-          >
-            <ChevronLeft size={18} color={palette.textPrimary} />
-            <Text style={{ fontSize: 14, fontWeight: '600', color: palette.textPrimary }}>Prev Chapter</Text>
+        {/* Next/Prev Chapter Navigation Footer */}
+        <View style={styles.navFooter}>
+          <TouchableOpacity style={[styles.navButton, { borderColor: palette.border }]} onPress={handlePrevChapter}>
+            <ChevronLeft size={20} color={palette.textPrimary} />
+            <Text style={[styles.navButtonText, { color: palette.textPrimary }]}>Previous</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={handleNextChapter}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, padding: 12, backgroundColor: palette.accentGreen, borderRadius: 12 }}
-          >
-            <Text style={{ fontSize: 14, fontWeight: '700', color: '#FFFFFF' }}>Next Chapter</Text>
-            <ChevronRight size={18} color="#FFFFFF" />
+          <TouchableOpacity style={[styles.navButton, { borderColor: palette.border }]} onPress={handleNextChapter}>
+            <Text style={[styles.navButtonText, { color: palette.textPrimary }]}>Next</Text>
+            <ChevronRight size={20} color={palette.textPrimary} />
           </TouchableOpacity>
         </View>
       </ScrollView>
 
       {/* Floating Verse Action Sheet */}
-      {hasSelection && (
-        <View
-          style={{
-            position: 'absolute',
-            bottom: 20,
-            left: 16,
-            right: 16,
-            backgroundColor: palette.card,
-            borderRadius: 20,
-            borderWidth: 1,
-            borderColor: palette.cardBorder,
-            padding: 16,
-            elevation: 12,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 6 },
-            shadowOpacity: 0.15,
-            shadowRadius: 10,
-          }}
-        >
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: palette.accentGold }}>
-              {selectedVerseNumbers.length} Verse{selectedVerseNumbers.length > 1 ? 's' : ''} Selected
+      {hasSelection ? (
+        <View style={[styles.actionSheet, { backgroundColor: palette.card, borderTopColor: palette.border }]}>
+          <View style={styles.actionSheetHeader}>
+            <Text style={[styles.actionSheetTitle, { color: palette.textPrimary }]}>
+              {selectedVerseNumbers.length === 1
+                ? `${currentBook.name} ${currentChapter}:${selectedVerseNumbers[0]}`
+                : `${currentBook.name} ${currentChapter}:${selectedVerseNumbers[0]}-${
+                    selectedVerseNumbers[selectedVerseNumbers.length - 1]
+                  }`}
             </Text>
-            <TouchableOpacity onPress={clearVerseSelection} style={{ padding: 4 }}>
-              <X size={18} color={palette.textSecondary} />
+            <TouchableOpacity onPress={clearVerseSelection}>
+              <X size={20} color={palette.textSecondary} />
             </TouchableOpacity>
           </View>
 
-          {/* Color Highlighters */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 14, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: palette.border }}>
-            {(['gold', 'sapphire', 'emerald', 'rose', 'purple'] as HighlightColor[]).map((c) => (
+          {/* Highlights Palette */}
+          <View style={styles.colorRow}>
+            {(['gold', 'emerald', 'rose', 'purple', 'sapphire'] as HighlightColor[]).map((c) => (
               <TouchableOpacity
                 key={c}
+                style={[
+                  styles.colorDot,
+                  {
+                    backgroundColor:
+                      c === 'gold'
+                        ? '#EAB308'
+                        : c === 'emerald'
+                        ? '#10B981'
+                        : c === 'rose'
+                        ? '#F43F5E'
+                        : c === 'purple'
+                        ? '#A855F7'
+                        : '#3B82F6',
+                  },
+                ]}
                 onPress={() => handleApplyHighlight(c)}
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: 14,
-                  backgroundColor:
-                    c === 'gold' ? '#EAB308' : c === 'sapphire' ? '#3B82F6' : c === 'emerald' ? '#22C55E' : c === 'rose' ? '#F43F5E' : '#A855F7',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
               />
             ))}
           </View>
 
-          {/* Main Action Buttons Grid */}
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'space-between' }}>
-            <TouchableOpacity onPress={handleLaunchStudy} style={styles.actionGridItem}>
-              <Sparkles size={18} color={palette.accentGreen} />
-              <Text style={[styles.actionGridLabel, { color: palette.accentGreen }]}>Study</Text>
+          {/* Primary Action Buttons */}
+          <View style={styles.actionButtonRow}>
+            <TouchableOpacity style={styles.prayActionButton} onPress={handlePrayAboutThis}>
+              <HeartHandshake size={18} color="#FFFFFF" />
+              <Text style={styles.prayActionText}>Pray About This</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={handleLaunchNote} style={styles.actionGridItem}>
-              <BookOpen size={18} color={palette.textPrimary} />
-              <Text style={[styles.actionGridLabel, { color: palette.textPrimary }]}>Note</Text>
+            <TouchableOpacity style={styles.iconActionButton} onPress={handleToggleBookmark}>
+              <BookmarkIcon
+                size={18}
+                color={
+                  selectedVerseNumbers.length > 0 &&
+                  isBookmarked(currentBook.id, currentChapter, selectedVerseNumbers[0])
+                    ? '#D97706'
+                    : palette.textPrimary
+                }
+              />
+              <Text style={[styles.iconActionLabel, { color: palette.textPrimary }]}>Bookmark</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={handleToggleBookmark} style={styles.actionGridItem}>
-              <BookmarkIcon size={18} color={palette.accentGold} />
-              <Text style={[styles.actionGridLabel, { color: palette.accentGold }]}>Bookmark</Text>
+            <TouchableOpacity style={styles.iconActionButton} onPress={() => setIsNoteModalOpen(true)}>
+              <Edit3 size={18} color={palette.textPrimary} />
+              <Text style={[styles.iconActionLabel, { color: palette.textPrimary }]}>Note</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={handleAddToMemory} style={styles.actionGridItem}>
-              <Brain size={18} color={palette.textPrimary} />
-              <Text style={[styles.actionGridLabel, { color: palette.textPrimary }]}>Memory</Text>
+            <TouchableOpacity style={styles.iconActionButton} onPress={handleCopy}>
+              <Copy size={18} color={palette.textPrimary} />
+              <Text style={[styles.iconActionLabel, { color: palette.textPrimary }]}>Copy</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={handleCopy} style={styles.actionGridItem}>
-              <Copy size={18} color={palette.textSecondary} />
-              <Text style={[styles.actionGridLabel, { color: palette.textSecondary }]}>Copy</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={handleShareText} style={styles.actionGridItem}>
-              <Share2 size={18} color={palette.textSecondary} />
-              <Text style={[styles.actionGridLabel, { color: palette.textSecondary }]}>Share</Text>
+            <TouchableOpacity style={styles.iconActionButton} onPress={handleShareText}>
+              <Share2 size={18} color={palette.textPrimary} />
+              <Text style={[styles.iconActionLabel, { color: palette.textPrimary }]}>Share</Text>
             </TouchableOpacity>
           </View>
         </View>
-      )}
+      ) : null}
 
-      {/* 15 Bible Translations Selection Modal */}
-      <Modal visible={isTranslationMenuOpen} transparent animationType="slide">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: palette.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '80%' }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Globe size={20} color={palette.accentGreen} />
-                <Text style={{ fontSize: 18, fontWeight: '800', color: palette.textPrimary }}>
-                  Bible Translations ({AVAILABLE_TRANSLATIONS.length})
-                </Text>
-              </View>
+      {/* MODAL 1: TRANSLATION SWITCHER & PARALLEL PICKER */}
+      <Modal visible={isTranslationMenuOpen} animationType="slide" transparent>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsTranslationMenuOpen(false)}>
+          <View style={[styles.modalContent, { backgroundColor: palette.card }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: palette.textPrimary }]}>
+                {parallelMode ? 'Select Parallel Translations (2-4)' : 'Select Translation'}
+              </Text>
               <TouchableOpacity onPress={() => setIsTranslationMenuOpen(false)}>
-                <X size={20} color={palette.textSecondary} />
+                <X size={24} color={palette.textSecondary} />
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {AVAILABLE_TRANSLATIONS.map((t) => {
-                const isSelected = translation.toLowerCase() === t.id.toLowerCase();
+            <ScrollView style={{ maxHeight: 380 }}>
+              {TRANSLATION_CATALOG.map((t) => {
+                const isSelected = parallelMode
+                  ? parallelTranslations.includes(t.translationId)
+                  : translation === t.translationId;
+
                 return (
                   <TouchableOpacity
-                    key={t.id}
+                    key={t.translationId}
+                    style={[
+                      styles.translationOption,
+                      { borderBottomColor: palette.border },
+                      isSelected && styles.selectedTranslationOption,
+                    ]}
                     onPress={() => {
-                      triggerLightHaptic();
-                      setTranslation(t.id as any);
-                      setIsTranslationMenuOpen(false);
-                    }}
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      paddingVertical: 14,
-                      paddingHorizontal: 14,
-                      borderRadius: 12,
-                      backgroundColor: isSelected ? palette.accentGreenLight : 'transparent',
-                      marginBottom: 6,
+                      if (parallelMode) {
+                        toggleParallelTranslation(t.translationId);
+                      } else {
+                        setTranslation(t.translationId);
+                        setIsTranslationMenuOpen(false);
+                      }
                     }}
                   >
-                    <View>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <Text style={{ fontSize: 16, fontWeight: '700', color: isSelected ? palette.accentGreen : palette.textPrimary }}>
-                          {t.name}
+                    <View style={styles.translationInfoCol}>
+                      <View style={styles.translationTitleRow}>
+                        <Text style={[styles.translationAbbr, { color: palette.textPrimary }]}>{t.abbreviation}</Text>
+                        <Text style={[styles.translationLangBadge, { color: palette.textSecondary }]}>
+                          {t.languageName}
                         </Text>
-                        <Text style={{ fontSize: 11, fontWeight: '700', color: palette.accentGold, textTransform: 'uppercase' }}>
-                          ({t.id})
-                        </Text>
+                        {t.licenseType.includes('CC') ? (
+                          <Text style={styles.ccSmallBadge}>CC BY-SA</Text>
+                        ) : (
+                          <Text style={styles.pdSmallBadge}>Public Domain</Text>
+                        )}
                       </View>
-                      <Text style={{ fontSize: 12, color: palette.textSecondary, marginTop: 2 }}>
-                        {t.language} • {t.isLocalAvailable ? 'Offline Instant' : 'Online Translation'}
-                      </Text>
+                      <Text style={[styles.translationFullName, { color: palette.textSecondary }]}>{t.fullName}</Text>
                     </View>
 
-                    {isSelected && <Check size={20} color={palette.accentGreen} />}
+                    {isSelected ? <Check size={20} color="#D97706" /> : null}
                   </TouchableOpacity>
                 );
               })}
             </ScrollView>
+
+            <TouchableOpacity style={styles.attributionLinkButton} onPress={() => { setIsTranslationMenuOpen(false); router.push('/bible-info'); }}>
+              <Info size={16} color="#D97706" />
+              <Text style={styles.attributionLinkText}>View All Licenses & Copyright Info</Text>
+            </TouchableOpacity>
           </View>
-        </View>
+        </TouchableOpacity>
       </Modal>
 
-      {/* Typography / Font Size Modal */}
-      <Modal visible={isFontMenuOpen} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
-          <View style={{ backgroundColor: palette.card, borderRadius: 20, width: '85%', padding: 24, borderWidth: 1, borderColor: palette.cardBorder }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ fontSize: 18, fontWeight: '700', color: palette.textPrimary }}>Text Size Settings</Text>
-              <TouchableOpacity onPress={() => setIsFontMenuOpen(false)}>
-                <X size={20} color={palette.textSecondary} />
+      {/* MODAL 2: BOOK & CHAPTER PICKER */}
+      <Modal visible={isBookPickerOpen} animationType="fade" transparent>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsBookPickerOpen(false)}>
+          <View style={[styles.modalContent, { backgroundColor: palette.card, maxHeight: '80%' }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: palette.textPrimary }]}>Select Book & Chapter</Text>
+              <TouchableOpacity onPress={() => setIsBookPickerOpen(false)}>
+                <X size={24} color={palette.textSecondary} />
               </TouchableOpacity>
             </View>
 
-            <Text style={{ fontSize: 14, color: palette.textSecondary, marginBottom: 12 }}>Choose Scripture Font Size:</Text>
-            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
-              {(['sm', 'md', 'lg', 'xl'] as const).map((sizeKey) => (
+            <ScrollView style={{ flex: 1 }}>
+              {BIBLE_BOOKS.map((b) => (
+                <View key={b.id} style={[styles.bookRow, { borderBottomColor: palette.border }]}>
+                  <Text style={[styles.bookRowName, { color: palette.textPrimary }]}>{b.name}</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chapterGrid}>
+                    {Array.from({ length: b.chaptersCount }, (_, i) => i + 1).map((ch) => (
+                      <TouchableOpacity
+                        key={`${b.id}-ch-${ch}`}
+                        style={[
+                          styles.chapterChip,
+                          b.id === currentBook.id && ch === currentChapter && styles.activeChapterChip,
+                        ]}
+                        onPress={() => {
+                          setLocation(b.id, ch);
+                          setIsBookPickerOpen(false);
+                          clearVerseSelection();
+                        }}
+                      >
+                        <Text
+                          style={[
+                            styles.chapterChipText,
+                            b.id === currentBook.id && ch === currentChapter && styles.activeChapterChipText,
+                          ]}
+                        >
+                          {ch}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* MODAL 3: READING CONTROLS & TYPOGRAPHY SETTINGS */}
+      <Modal visible={isSettingsOpen} animationType="slide" transparent>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsSettingsOpen(false)}>
+          <View style={[styles.modalContent, { backgroundColor: palette.card }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: palette.textPrimary }]}>Reading Preferences</Text>
+              <TouchableOpacity onPress={() => setIsSettingsOpen(false)}>
+                <X size={24} color={palette.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.settingLabel, { color: palette.textSecondary }]}>Theme Mode</Text>
+            <View style={styles.settingPillRow}>
+              {(['light', 'dark', 'sepia'] as ThemeMode[]).map((mode) => (
                 <TouchableOpacity
-                  key={sizeKey}
-                  onPress={() => setFontSize(sizeKey)}
-                  style={{
-                    flex: 1,
-                    paddingVertical: 10,
-                    borderRadius: 10,
-                    backgroundColor: fontSize === sizeKey ? palette.accentGreen : palette.inputBg,
-                    alignItems: 'center',
-                  }}
+                  key={mode}
+                  style={[
+                    styles.settingPill,
+                    themeMode === mode && styles.activeSettingPill,
+                    { borderColor: palette.border },
+                  ]}
+                  onPress={() => setThemeMode(mode)}
                 >
-                  <Text style={{ fontSize: 14, fontWeight: '700', color: fontSize === sizeKey ? '#FFFFFF' : palette.textPrimary, textTransform: 'uppercase' }}>
-                    {sizeKey}
+                  <Text style={[styles.settingPillText, themeMode === mode && styles.activeSettingPillText]}>
+                    {mode.toUpperCase()}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={[styles.settingLabel, { color: palette.textSecondary, marginTop: 14 }]}>Font Size</Text>
+            <View style={styles.settingPillRow}>
+              {(['sm', 'md', 'lg', 'xl'] as const).map((sz) => (
+                <TouchableOpacity
+                  key={sz}
+                  style={[styles.settingPill, fontSize === sz && styles.activeSettingPill, { borderColor: palette.border }]}
+                  onPress={() => setFontSize(sz)}
+                >
+                  <Text style={[styles.settingPillText, fontSize === sz && styles.activeSettingPillText]}>
+                    {sz.toUpperCase()}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={[styles.settingLabel, { color: palette.textSecondary, marginTop: 14 }]}>Line Spacing</Text>
+            <View style={styles.settingPillRow}>
+              {(['normal', 'relaxed', 'spacious'] as const).map((ls) => (
+                <TouchableOpacity
+                  key={ls}
+                  style={[
+                    styles.settingPill,
+                    lineSpacing === ls && styles.activeSettingPill,
+                    { borderColor: palette.border },
+                  ]}
+                  onPress={() => setLineSpacing(ls)}
+                >
+                  <Text style={[styles.settingPillText, lineSpacing === ls && styles.activeSettingPillText]}>
+                    {ls.toUpperCase()}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
           </View>
-        </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* MODAL 4: STUDY NOTE INPUT */}
+      <Modal visible={isNoteModalOpen} animationType="fade" transparent>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsNoteModalOpen(false)}>
+          <View style={[styles.modalContent, { backgroundColor: palette.card }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: palette.textPrimary }]}>Add Study Note</Text>
+              <TouchableOpacity onPress={() => setIsNoteModalOpen(false)}>
+                <X size={24} color={palette.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <TextInput
+              style={[
+                styles.noteInput,
+                { color: palette.textPrimary, borderColor: palette.border, backgroundColor: isDark ? '#1F2937' : '#F9FAFB' },
+              ]}
+              placeholder="Write your reflection or personal note on this verse..."
+              placeholderTextColor={palette.textSecondary}
+              multiline
+              numberOfLines={4}
+              value={noteContent}
+              onChangeText={setNoteContent}
+            />
+
+            <TouchableOpacity style={styles.saveNoteButton} onPress={handleSaveNote}>
+              <Text style={styles.saveNoteButtonText}>Save Reflection</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
       </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  actionGridItem: {
-    width: '30%',
+  container: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+  headerPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(217, 119, 6, 0.12)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  headerPillText: {
+    fontWeight: '800',
+    fontSize: 13,
+  },
+  headerBookButton: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  headerBookTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  iconButton: {
+    padding: 6,
+  },
+  readerContent: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  chapterHeaderContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  chapterHeaderTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  licenseNoticeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+  },
+  licenseNoticeText: {
+    fontSize: 12,
+  },
+  loadingContainer: {
+    paddingVertical: 60,
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+  },
+  singleVerseContainer: {
+    marginBottom: 24,
+  },
+  verseRow: {
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+  },
+  verseNumber: {
+    fontWeight: '800',
+    fontSize: 13,
+  },
+  verseText: {
+    fontWeight: '400',
+  },
+  indicatorIcon: {
+    marginLeft: 4,
+  },
+  parallelContainer: {
+    marginBottom: 24,
+  },
+  parallelVerseBlock: {
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+  },
+  verseNumberBadge: {
+    backgroundColor: '#D97706',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginBottom: 6,
+  },
+  verseNumberText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  parallelCol: {
+    marginTop: 6,
+  },
+  parallelTransTag: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#D97706',
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
+  navFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: 20,
+  },
+  navButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderRadius: 10,
+    gap: 6,
+  },
+  navButtonText: {
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  actionSheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 16,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderTopWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 10,
+  },
+  actionSheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  actionSheetTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  colorRow: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 14,
+    justifyContent: 'center',
+  },
+  colorDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+  },
+  actionButtonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  prayActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#D97706',
+    paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: 'rgba(0,0,0,0.03)',
+    gap: 6,
+  },
+  prayActionText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: 13,
+  },
+  iconActionButton: {
+    alignItems: 'center',
+    paddingHorizontal: 8,
+  },
+  iconActionLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  translationOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  selectedTranslationOption: {
+    backgroundColor: 'rgba(217, 119, 6, 0.08)',
+  },
+  translationInfoCol: {
+    flex: 1,
+  },
+  translationTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  translationAbbr: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  translationLangBadge: {
+    fontSize: 12,
+  },
+  pdSmallBadge: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#059669',
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  ccSmallBadge: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#2563EB',
+    backgroundColor: 'rgba(37, 99, 235, 0.15)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  translationFullName: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  attributionLinkButton: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+    gap: 6,
+    marginTop: 14,
+    paddingVertical: 10,
   },
-  actionGridLabel: {
+  attributionLinkText: {
+    color: '#D97706',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  bookRow: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  bookRowName: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  chapterGrid: {
+    gap: 6,
+  },
+  chapterChip: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(156, 163, 175, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeChapterChip: {
+    backgroundColor: '#D97706',
+  },
+  chapterChipText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#6B7280',
+  },
+  activeChapterChipText: {
+    color: '#FFFFFF',
+  },
+  settingLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  settingPillRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+  },
+  settingPill: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  activeSettingPill: {
+    backgroundColor: '#D97706',
+    borderColor: '#D97706',
+  },
+  settingPillText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '800',
+    color: '#6B7280',
+  },
+  activeSettingPillText: {
+    color: '#FFFFFF',
+  },
+  noteInput: {
+    borderRadius: 10,
+    borderWidth: 1,
+    padding: 12,
+    fontSize: 14,
+    textAlignVertical: 'top',
+    height: 100,
+    marginBottom: 16,
+  },
+  saveNoteButton: {
+    backgroundColor: '#D97706',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  saveNoteButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
   },
 });

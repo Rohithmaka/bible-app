@@ -1,4 +1,5 @@
 import { BIBLE_BOOKS, SCRIPTURE_DATA, getChapterVerses, BibleBook, Verse } from '../data/bibleData';
+import { getTranslationInfo } from './translationCatalog';
 
 export interface SearchResult {
   bookId: string;
@@ -8,18 +9,19 @@ export interface SearchResult {
   verse: number;
   text: string;
   matchedTerm: string;
+  translationId?: string;
 }
 
 /**
  * Searches scripture verses across Old and New Testaments
  */
-export function searchBible(query: string, testamentFilter?: 'ALL' | 'OT' | 'NT'): SearchResult[] {
+export function searchBible(query: string, testamentFilter?: 'ALL' | 'OT' | 'NT', translationId: string = 'KJV'): SearchResult[] {
   if (!query || query.trim().length < 2) return [];
 
   const cleanQuery = query.trim().toLowerCase();
   const results: SearchResult[] = [];
 
-  const targetBooks = BIBLE_BOOKS.filter(b => {
+  const targetBooks = BIBLE_BOOKS.filter((b) => {
     if (testamentFilter === 'OT') return b.testament === 'OT';
     if (testamentFilter === 'NT') return b.testament === 'NT';
     return true;
@@ -40,6 +42,7 @@ export function searchBible(query: string, testamentFilter?: 'ALL' | 'OT' | 'NT'
               verse: v.verse,
               text: v.text,
               matchedTerm: cleanQuery,
+              translationId,
             });
 
             if (results.length >= 100) return results; // Max limit
@@ -49,34 +52,43 @@ export function searchBible(query: string, testamentFilter?: 'ALL' | 'OT' | 'NT'
     }
   }
 
-  // Fallback check if search produced minimal results
-  if (results.length === 0) {
-    for (const book of targetBooks.slice(0, 10)) {
-      const verses = getChapterVerses(book.id, 1);
-      for (const v of verses) {
-        if (v.text.toLowerCase().includes(cleanQuery)) {
-          results.push({
-            bookId: book.id,
-            bookName: book.name,
-            testament: book.testament,
-            chapter: 1,
-            verse: v.verse,
-            text: v.text,
-            matchedTerm: cleanQuery,
-          });
-        }
-      }
-    }
-  }
-
   return results;
+}
+
+/**
+ * Parses passage reference strings like "John 3:16", "Ps 23:1", "1 Cor 13"
+ */
+export function parseVerseReference(refString: string): { bookId: string; bookName: string; chapter: number; verse?: number } | null {
+  if (!refString) return null;
+  const clean = refString.trim();
+
+  // Pattern matching: e.g. "John 3:16" or "1 John 4:8"
+  const match = clean.match(/^(\d?\s*[A-Za-z\u0C00-\u0C7F]+)\s+(\d+)(?::(\d+))?$/);
+  if (!match) return null;
+
+  const rawBook = match[1].trim().toLowerCase();
+  const chapter = parseInt(match[2], 10);
+  const verse = match[3] ? parseInt(match[3], 10) : undefined;
+
+  const foundBook = BIBLE_BOOKS.find(
+    (b) => b.name.toLowerCase() === rawBook || b.id.toLowerCase() === rawBook
+  );
+
+  if (!foundBook) return null;
+
+  return {
+    bookId: foundBook.id,
+    bookName: foundBook.name,
+    chapter: Math.min(Math.max(1, chapter), foundBook.chaptersCount),
+    verse,
+  };
 }
 
 /**
  * Navigation helpers to get next and previous chapter locations
  */
 export function getNextChapterLocation(bookId: string, chapter: number): { bookId: string; chapter: number } | null {
-  const currentBookIndex = BIBLE_BOOKS.findIndex(b => b.id === bookId);
+  const currentBookIndex = BIBLE_BOOKS.findIndex((b) => b.id === bookId);
   if (currentBookIndex === -1) return null;
 
   const currentBook = BIBLE_BOOKS[currentBookIndex];
@@ -91,7 +103,7 @@ export function getNextChapterLocation(bookId: string, chapter: number): { bookI
 }
 
 export function getPrevChapterLocation(bookId: string, chapter: number): { bookId: string; chapter: number } | null {
-  const currentBookIndex = BIBLE_BOOKS.findIndex(b => b.id === bookId);
+  const currentBookIndex = BIBLE_BOOKS.findIndex((b) => b.id === bookId);
   if (currentBookIndex === -1) return null;
 
   if (chapter > 1) {
@@ -105,7 +117,7 @@ export function getPrevChapterLocation(bookId: string, chapter: number): { bookI
 }
 
 /**
- * Format selected verses into copyable text
+ * Format selected verses into copyable text, preserving required copyright & attribution notices
  */
 export function formatVerseShareText(
   bookName: string,
@@ -114,10 +126,18 @@ export function formatVerseShareText(
   translation: string = 'KJV'
 ): string {
   if (selectedVerses.length === 0) return '';
-  
+
   const sorted = [...selectedVerses].sort((a, b) => a.verse - b.verse);
   const verseNumbersStr = sorted.length === 1 ? `${sorted[0].verse}` : `${sorted[0].verse}-${sorted[sorted.length - 1].verse}`;
-  
-  const bodyText = sorted.map(v => `"${v.text}"`).join('\n\n');
-  return `${bookName} ${chapter}:${verseNumbersStr} (${translation})\n\n${bodyText}\n\nShared via Holy Bible App`;
+
+  const bodyText = sorted.map((v) => `"${v.text}"`).join('\n\n');
+
+  // Surface required copyright attribution if applicable
+  const licenseInfo = getTranslationInfo(translation);
+  let legalNotice = '';
+  if (licenseInfo?.attributionRequired && licenseInfo.copyrightNotice) {
+    legalNotice = `\n\nAttribution: ${licenseInfo.copyrightNotice}`;
+  }
+
+  return `${bookName} ${chapter}:${verseNumbersStr} (${translation})\n\n${bodyText}${legalNotice}\n\nShared via ALTER Prayer Community`;
 }
