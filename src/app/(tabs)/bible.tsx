@@ -15,7 +15,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useBibleStore, HighlightColor, ThemeMode } from '../../store/useBibleStore';
 import { useSpiritualStore } from '../../store/useSpiritualStore';
 import { BIBLE_BOOKS, Verse } from '../../data/bibleData';
-import { getNextChapterLocation, getPrevChapterLocation, formatVerseShareText } from '../../engine/bibleEngine';
+import { getNextChapterLocation, getPrevChapterLocation, formatVerseShareText, getLocalizedBookName } from '../../engine/bibleEngine';
 import { fetchChapterVerses, fetchParallelChapterVerses, ParallelChapterResult } from '../../engine/multiBibleService';
 import { TRANSLATION_CATALOG, getTranslationInfo, SUPPORTED_LANGUAGES } from '../../engine/translationCatalog';
 import { SpiritualTheme } from '../../constants/spiritualTheme';
@@ -331,7 +331,7 @@ export default function BibleReaderScreen() {
 
         <TouchableOpacity style={styles.headerBookButton} onPress={() => setIsBookPickerOpen(true)}>
           <Text style={[styles.headerBookTitle, { color: palette.textPrimary }]}>
-            {currentBook.name} {currentChapter}
+            {getLocalizedBookName(currentBook.id, translation)} {currentChapter}
           </Text>
         </TouchableOpacity>
 
@@ -355,7 +355,7 @@ export default function BibleReaderScreen() {
         {/* Chapter Header Title */}
         <View style={styles.chapterHeaderContainer}>
           <Text style={[styles.chapterHeaderTitle, { color: palette.textPrimary }]}>
-            {currentBook.name} {currentChapter}
+            {getLocalizedBookName(currentBook.id, translation)} {currentChapter}
           </Text>
 
           {currentTranslationInfo ? (
@@ -503,8 +503,8 @@ export default function BibleReaderScreen() {
           <View style={styles.actionSheetHeader}>
             <Text style={[styles.actionSheetTitle, { color: palette.textPrimary }]}>
               {selectedVerseNumbers.length === 1
-                ? `${currentBook.name} ${currentChapter}:${selectedVerseNumbers[0]}`
-                : `${currentBook.name} ${currentChapter}:${selectedVerseNumbers[0]}-${
+                ? `${getLocalizedBookName(currentBook.id, translation)} ${currentChapter}:${selectedVerseNumbers[0]}`
+                : `${getLocalizedBookName(currentBook.id, translation)} ${currentChapter}:${selectedVerseNumbers[0]}-${
                     selectedVerseNumbers[selectedVerseNumbers.length - 1]
                   }`}
             </Text>
@@ -738,7 +738,9 @@ export default function BibleReaderScreen() {
             <ScrollView style={{ flex: 1 }}>
               {BIBLE_BOOKS.map((b) => (
                 <View key={b.id} style={[styles.bookRow, { borderBottomColor: palette.border }]}>
-                  <Text style={[styles.bookRowName, { color: palette.textPrimary }]}>{b.name}</Text>
+                  <Text style={[styles.bookRowName, { color: palette.textPrimary }]}>
+                    {getLocalizedBookName(b.id, translation)}
+                  </Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chapterGrid}>
                     {Array.from({ length: b.chaptersCount }, (_, i) => i + 1).map((ch) => (
                       <TouchableOpacity

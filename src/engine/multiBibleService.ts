@@ -96,10 +96,32 @@ const BOLLS_CODE_MAP: Record<string, string> = {
   // Norwegian
   nor: 'DNB',
   nor1930: 'DNB',
+  // Hindi
+  hiov: 'HIOV',
+  hindi_irv: 'HIOV',
+  hin_irv: 'HIOV',
+  bsi_hin: 'HIOV',
+  hin: 'HIOV',
+  // Malayalam
+  mov: 'MOV',
+  mal_irv: 'MOV',
+  bsi_mal: 'MOV',
+  mal: 'MOV',
+  // Kannada
+  kncl: 'KNCL',
+  kan_irv: 'KNCL',
+  bsi_kan: 'KNCL',
+  kan: 'KNCL',
+  // Nepali
+  nnrv: 'NNRV',
+  nep_irv: 'NNRV',
+  bsi_nep: 'NNRV',
+  nep: 'NNRV',
   // Tamil
   bsi_tam: 'TBSI',
   tam_irv: 'TBSI',
   irv_tam: 'TBSI',
+  tam: 'TBSI',
 };
 
 /**
