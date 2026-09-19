@@ -33,7 +33,7 @@ export default function PlannerScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View style={{ marginBottom: 20 }}>
+        <View style={{ marginBottom: 16 }}>
           <Text style={{ fontSize: 13, fontWeight: '700', color: palette.accentGreen, textTransform: 'uppercase', letterSpacing: 1.2 }}>
             Personalized Daily Routine
           </Text>
@@ -43,6 +43,110 @@ export default function PlannerScreen() {
           <Text style={{ fontSize: 14, color: palette.textSecondary, marginTop: 4 }}>
             Tailored to your {user.timeCommitment} commitment for growing in {user.growthGoals.slice(0, 3).join(', ')}.
           </Text>
+        </View>
+
+        {/* TODAY'S ROUTINE COMPLETION CHECKLIST */}
+        <View style={{ marginBottom: 20 }}>
+          <View style={{ backgroundColor: palette.card, borderRadius: 18, borderWidth: 1.5, borderColor: (isMorningDone && isEveningDone) ? palette.accentGreen : palette.cardBorder, padding: 18 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <CheckCircle2 size={20} color={(isMorningDone && isEveningDone) ? palette.accentGreen : palette.accentGold} />
+                <Text style={{ fontSize: 16, fontWeight: '800', color: palette.textPrimary }}>
+                  Today's Completion Checklist
+                </Text>
+              </View>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: (isMorningDone && isEveningDone) ? palette.accentGreen : palette.accentGold }}>
+                {(isMorningDone && isEveningDone) ? '100% COMPLETE 🎉' : 'IN PROGRESS'}
+              </Text>
+            </View>
+
+            {/* Interactive Checklist Items */}
+            <View style={{ gap: 10 }}>
+              <TouchableOpacity
+                onPress={() => {
+                  triggerLightHaptic();
+                  router.push('/morning-journey' as any);
+                }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: palette.inputBg, padding: 12, borderRadius: 12 }}
+              >
+                <CheckCircle2 size={18} color={isMorningDone ? palette.accentGreen : palette.textMuted} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: palette.textPrimary }}>
+                    1. Morning Scripture & Walk
+                  </Text>
+                  <Text style={{ fontSize: 12, color: isMorningDone ? palette.accentGreen : palette.textSecondary }}>
+                    {isMorningDone ? 'Completed ✓' : 'Tap to start morning routine'}
+                  </Text>
+                </View>
+                <ArrowRight size={14} color={palette.accentGreen} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => {
+                  triggerLightHaptic();
+                  router.push('/one-year-planner' as any);
+                }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: palette.inputBg, padding: 12, borderRadius: 12 }}
+              >
+                <CheckCircle2 size={18} color={palette.accentGreen} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: palette.textPrimary }}>
+                    2. 365-Day Bible Portion
+                  </Text>
+                  <Text style={{ fontSize: 12, color: palette.accentGreen }}>
+                    Old & New Testament • Psalms & Proverbs
+                  </Text>
+                </View>
+                <ArrowRight size={14} color={palette.accentGreen} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => {
+                  triggerLightHaptic();
+                  router.push('/pray-now' as any);
+                }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: palette.inputBg, padding: 12, borderRadius: 12 }}
+              >
+                <CheckCircle2 size={18} color={palette.accentGold} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: palette.textPrimary }}>
+                    3. Heart Reflection & Prayer
+                  </Text>
+                  <Text style={{ fontSize: 12, color: palette.textSecondary }}>
+                    Conversational prayer & intercession
+                  </Text>
+                </View>
+                <ArrowRight size={14} color={palette.accentGold} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => {
+                  triggerLightHaptic();
+                  router.push('/evening-journey' as any);
+                }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: palette.inputBg, padding: 12, borderRadius: 12 }}
+              >
+                <CheckCircle2 size={18} color={isEveningDone ? palette.accentGreen : palette.textMuted} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: palette.textPrimary }}>
+                    4. Evening Reflection
+                  </Text>
+                  <Text style={{ fontSize: 12, color: isEveningDone ? palette.accentGreen : palette.textSecondary }}>
+                    {isEveningDone ? 'Completed ✓' : 'Review day & surrender burdens'}
+                  </Text>
+                </View>
+                <ArrowRight size={14} color={palette.accentGreen} />
+              </TouchableOpacity>
+            </View>
+
+            {(isMorningDone && isEveningDone) && (
+              <View style={{ marginTop: 12, padding: 12, borderRadius: 10, backgroundColor: palette.accentGreenLight, alignItems: 'center' }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: palette.accentGreen }}>
+                  🎉 Amen! Your Daily Bible Walk for today is complete!
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
 
         {/* Routine Timeline breakdown */}
