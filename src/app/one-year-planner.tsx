@@ -460,16 +460,16 @@ export default function OneYearPlannerScreen() {
 
           {/* SPREADSHEET TABLE HEADER */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
-            <View style={{ minWidth: 680 }}>
+            <View style={{ minWidth: 700 }}>
               {/* Header Row */}
-              <View style={{ flexDirection: 'row', backgroundColor: isDark ? '#1F2937' : '#E5E7EB', paddingVertical: 10, paddingHorizontal: 8, borderBottomWidth: 1.5, borderBottomColor: palette.border }}>
-                <Text style={[styles.cell, { width: 64, fontWeight: '800', color: palette.textPrimary }]}>DAY</Text>
-                <Text style={[styles.cell, { width: 220, fontWeight: '800', color: palette.textPrimary }]}>BIBLE SCRIPTURES</Text>
-                <Text style={[styles.cell, { width: 95, fontWeight: '800', color: palette.accentGreen, textAlign: 'center' }]}>READ TIME</Text>
-                <Text style={[styles.cell, { width: 95, fontWeight: '800', color: '#E11D48', textAlign: 'center' }]}>PRAYER TIME</Text>
-                <Text style={[styles.cell, { width: 95, fontWeight: '800', color: '#7C3AED', textAlign: 'center' }]}>QUIET TIME</Text>
-                <Text style={[styles.cell, { width: 65, fontWeight: '800', color: palette.accentGold, textAlign: 'center' }]}>TOTAL</Text>
-                <Text style={[styles.cell, { width: 60, fontWeight: '800', color: palette.textPrimary, textAlign: 'center' }]}>STATUS</Text>
+              <View style={{ flexDirection: 'row', backgroundColor: isDark ? '#1F2937' : '#E5E7EB', paddingVertical: 10, paddingHorizontal: 8, borderBottomWidth: 1.5, borderBottomColor: palette.border, alignItems: 'center' }}>
+                <Text style={[styles.cell, { width: 44, fontWeight: '800', color: palette.textPrimary, textAlign: 'center' }]}>DONE</Text>
+                <Text style={[styles.cell, { width: 56, fontWeight: '800', color: palette.textPrimary }]}>DAY</Text>
+                <Text style={[styles.cell, { width: 250, fontWeight: '800', color: palette.textPrimary }]}>ORDERED BIBLE SCRIPTURES (1 → 4)</Text>
+                <Text style={[styles.cell, { width: 90, fontWeight: '800', color: palette.accentGreen, textAlign: 'center' }]}>READ TIME</Text>
+                <Text style={[styles.cell, { width: 90, fontWeight: '800', color: '#E11D48', textAlign: 'center' }]}>PRAYER TIME</Text>
+                <Text style={[styles.cell, { width: 90, fontWeight: '800', color: '#7C3AED', textAlign: 'center' }]}>QUIET TIME</Text>
+                <Text style={[styles.cell, { width: 55, fontWeight: '800', color: palette.accentGold, textAlign: 'center' }]}>TOTAL</Text>
               </View>
 
               {/* Rows List */}
@@ -516,8 +516,20 @@ export default function OneYearPlannerScreen() {
                             : palette.card,
                         }}
                       >
+                        {/* LEFT SIDE CHECKBOX */}
+                        <TouchableOpacity
+                          onPress={() => handleToggleComplete(dayNum)}
+                          style={{ width: 44, alignItems: 'center', justifyContent: 'center' }}
+                        >
+                          {isDone ? (
+                            <CheckSquare size={20} color={palette.accentGreen} />
+                          ) : (
+                            <Square size={20} color={palette.textMuted} />
+                          )}
+                        </TouchableOpacity>
+
                         {/* Day Cell */}
-                        <View style={{ width: 64 }}>
+                        <View style={{ width: 56 }}>
                           <Text style={{ fontSize: 12, fontWeight: '800', color: isToday ? palette.accentGold : palette.textPrimary }}>
                             Day {dayNum}
                           </Text>
@@ -526,25 +538,57 @@ export default function OneYearPlannerScreen() {
                           )}
                         </View>
 
-                        {/* Scripture Cell */}
-                        <TouchableOpacity
-                          onPress={() => handleOpenScriptureInBible(dayReading.oldTestament)}
-                          style={{ width: 220, paddingRight: 6 }}
-                        >
-                          <Text style={{ fontSize: 12, fontWeight: '700', color: palette.accentGreen }} numberOfLines={1}>
-                            {dayReading.oldTestament.displayText} • {dayReading.newTestament.displayText}
-                          </Text>
-                          <Text style={{ fontSize: 11, color: palette.textSecondary }} numberOfLines={1}>
-                            {dayReading.psalm.displayText} • {dayReading.proverb.displayText}
-                          </Text>
-                        </TouchableOpacity>
+                        {/* Ordered Scripture Cell (1 -> 2 -> 3 -> 4) */}
+                        <View style={{ width: 250, paddingRight: 6 }}>
+                          {/* 1. Old Testament & 2. New Testament */}
+                          <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+                            <TouchableOpacity
+                              onPress={() => handleOpenScriptureInBible(dayReading.oldTestament)}
+                              style={{ flex: 1 }}
+                            >
+                              <Text style={{ fontSize: 11.5, fontWeight: '700', color: palette.accentGold }} numberOfLines={1}>
+                                1. {dayReading.oldTestament.displayText}
+                              </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                              onPress={() => handleOpenScriptureInBible(dayReading.newTestament)}
+                              style={{ flex: 1 }}
+                            >
+                              <Text style={{ fontSize: 11.5, fontWeight: '700', color: palette.accentGreen }} numberOfLines={1}>
+                                2. {dayReading.newTestament.displayText}
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+
+                          {/* 3. Psalms & 4. Proverbs */}
+                          <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center', marginTop: 2 }}>
+                            <TouchableOpacity
+                              onPress={() => handleOpenScriptureInBible(dayReading.psalm)}
+                              style={{ flex: 1 }}
+                            >
+                              <Text style={{ fontSize: 11, color: '#3498DB', fontWeight: '600' }} numberOfLines={1}>
+                                3. {dayReading.psalm.displayText}
+                              </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                              onPress={() => handleOpenScriptureInBible(dayReading.proverb)}
+                              style={{ flex: 1 }}
+                            >
+                              <Text style={{ fontSize: 11, color: '#9B59B6', fontWeight: '600' }} numberOfLines={1}>
+                                4. {dayReading.proverb.displayText}
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
 
                         {/* Reading Time Cell */}
-                        <View style={{ width: 95, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                        <View style={{ width: 90, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
                           <TouchableOpacity onPress={() => adjustTime(dayNum, 'readingMinutes', -5)}>
                             <Minus size={12} color={palette.textSecondary} />
                           </TouchableOpacity>
-                          <Text style={{ fontSize: 12, fontWeight: '700', color: palette.accentGreen, minWidth: 28, textAlign: 'center' }}>
+                          <Text style={{ fontSize: 12, fontWeight: '700', color: palette.accentGreen, minWidth: 26, textAlign: 'center' }}>
                             {log.readingMinutes}m
                           </Text>
                           <TouchableOpacity onPress={() => adjustTime(dayNum, 'readingMinutes', 5)}>
@@ -553,11 +597,11 @@ export default function OneYearPlannerScreen() {
                         </View>
 
                         {/* Prayer Time Cell */}
-                        <View style={{ width: 95, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                        <View style={{ width: 90, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
                           <TouchableOpacity onPress={() => adjustTime(dayNum, 'prayerMinutes', -5)}>
                             <Minus size={12} color={palette.textSecondary} />
                           </TouchableOpacity>
-                          <Text style={{ fontSize: 12, fontWeight: '700', color: '#E11D48', minWidth: 28, textAlign: 'center' }}>
+                          <Text style={{ fontSize: 12, fontWeight: '700', color: '#E11D48', minWidth: 26, textAlign: 'center' }}>
                             {log.prayerMinutes}m
                           </Text>
                           <TouchableOpacity onPress={() => adjustTime(dayNum, 'prayerMinutes', 5)}>
@@ -566,11 +610,11 @@ export default function OneYearPlannerScreen() {
                         </View>
 
                         {/* Quiet Time Cell */}
-                        <View style={{ width: 95, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                        <View style={{ width: 90, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
                           <TouchableOpacity onPress={() => adjustTime(dayNum, 'quietMinutes', -5)}>
                             <Minus size={12} color={palette.textSecondary} />
                           </TouchableOpacity>
-                          <Text style={{ fontSize: 12, fontWeight: '700', color: '#7C3AED', minWidth: 28, textAlign: 'center' }}>
+                          <Text style={{ fontSize: 12, fontWeight: '700', color: '#7C3AED', minWidth: 26, textAlign: 'center' }}>
                             {log.quietMinutes}m
                           </Text>
                           <TouchableOpacity onPress={() => adjustTime(dayNum, 'quietMinutes', 5)}>
@@ -579,23 +623,11 @@ export default function OneYearPlannerScreen() {
                         </View>
 
                         {/* Total Cell */}
-                        <View style={{ width: 65, alignItems: 'center' }}>
+                        <View style={{ width: 55, alignItems: 'center' }}>
                           <Text style={{ fontSize: 12, fontWeight: '800', color: palette.accentGold }}>
                             {totalMins}m
                           </Text>
                         </View>
-
-                        {/* Status Checkbox Cell */}
-                        <TouchableOpacity
-                          onPress={() => handleToggleComplete(dayNum)}
-                          style={{ width: 60, alignItems: 'center' }}
-                        >
-                          {isDone ? (
-                            <CheckSquare size={18} color={palette.accentGreen} />
-                          ) : (
-                            <Square size={18} color={palette.textMuted} />
-                          )}
-                        </TouchableOpacity>
                       </View>
                     );
                   })}
