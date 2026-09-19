@@ -706,7 +706,7 @@ export default function PrayerScreen() {
       {/* Add Private Prayer Modal */}
       <Modal visible={isAddPrivateOpen} transparent animationType="slide">
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end', alignItems: 'center' }}>
-          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => setIsAddPrivateOpen(false)} />
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setIsAddPrivateOpen(false)} />
           <View style={{ backgroundColor: palette.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderRadius: 24, padding: 24, width: '100%', maxWidth: 480, alignSelf: 'center', maxHeight: '90%' }}>
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -745,7 +745,7 @@ export default function PrayerScreen() {
       {/* Add Community Prayer Modal */}
       <Modal visible={isAddCommunityOpen} transparent animationType="slide">
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end', alignItems: 'center' }}>
-          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => setIsAddCommunityOpen(false)} />
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setIsAddCommunityOpen(false)} />
           <View style={{ backgroundColor: palette.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderRadius: 24, padding: 24, width: '100%', maxWidth: 480, alignSelf: 'center', maxHeight: '90%' }}>
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -792,7 +792,7 @@ export default function PrayerScreen() {
       {/* Add Testimonial / Story of Faith Modal */}
       <Modal visible={isAddTestimonialOpen} transparent animationType="slide">
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end', alignItems: 'center' }}>
-          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => setIsAddTestimonialOpen(false)} />
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setIsAddTestimonialOpen(false)} />
           <View style={{ backgroundColor: palette.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderRadius: 24, padding: 24, width: '100%', maxWidth: 480, alignSelf: 'center', maxHeight: '90%' }}>
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -850,7 +850,7 @@ export default function PrayerScreen() {
       {/* Answered Prayer Note Modal */}
       <Modal visible={isAnswerModalOpen} transparent animationType="fade">
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
-          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => setIsAnswerModalOpen(false)} />
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setIsAnswerModalOpen(false)} />
           <View style={{ backgroundColor: palette.card, borderRadius: 20, width: '90%', maxWidth: 440, padding: 24, borderWidth: 1, borderColor: palette.cardBorder, alignSelf: 'center' }}>
             <Text style={{ fontSize: 18, fontWeight: '700', color: palette.textPrimary, marginBottom: 6 }}>
               Prayer Answered 🙌
