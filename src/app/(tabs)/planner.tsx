@@ -6,7 +6,7 @@ import { useBibleStore } from '../../store/useBibleStore';
 import { useSpiritualStore } from '../../store/useSpiritualStore';
 import { SpiritualTheme } from '../../constants/spiritualTheme';
 import { triggerLightHaptic } from '../../services/mobileHaptics';
-import { Calendar, Sun, Moon, Clock, Sparkles, CheckCircle2, ArrowRight, Brain } from 'lucide-react-native';
+import { Calendar, Sun, Moon, Clock, Sparkles, CheckCircle2, ArrowRight, Brain, Table, BarChart3, Activity } from 'lucide-react-native';
 
 export default function PlannerScreen() {
   const router = useRouter();
@@ -43,6 +43,63 @@ export default function PlannerScreen() {
           <Text style={{ fontSize: 14, color: palette.textSecondary, marginTop: 4 }}>
             Tailored to your {user.timeCommitment} commitment for growing in {user.growthGoals.slice(0, 3).join(', ')}.
           </Text>
+        </View>
+
+        {/* QUICK SPREADSHEET & ANALYTICAL VIEW NAVIGATION ROW */}
+        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
+          <TouchableOpacity
+            onPress={() => {
+              triggerLightHaptic();
+              router.push('/one-year-planner' as any);
+            }}
+            activeOpacity={0.88}
+            style={{
+              flex: 1,
+              backgroundColor: palette.card,
+              borderRadius: 16,
+              borderWidth: 1.5,
+              borderColor: palette.accentGold,
+              padding: 14,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 10,
+            }}
+          >
+            <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(217, 119, 6, 0.15)', justifyContent: 'center', alignItems: 'center' }}>
+              <Table size={20} color={palette.accentGold} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: palette.textPrimary }}>Spreadsheet</Text>
+              <Text style={{ fontSize: 11, color: palette.textSecondary, marginTop: 1 }}>Grid Tracker</Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => {
+              triggerLightHaptic();
+              router.push('/one-year-planner' as any);
+            }}
+            activeOpacity={0.88}
+            style={{
+              flex: 1,
+              backgroundColor: palette.card,
+              borderRadius: 16,
+              borderWidth: 1.5,
+              borderColor: '#4F46E5',
+              padding: 14,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 10,
+            }}
+          >
+            <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(79, 70, 229, 0.15)', justifyContent: 'center', alignItems: 'center' }}>
+              <BarChart3 size={20} color="#4F46E5" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: palette.textPrimary }}>Analytics</Text>
+              <Text style={{ fontSize: 11, color: palette.textSecondary, marginTop: 1 }}>Spiritual Insights</Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* TODAY'S ROUTINE COMPLETION CHECKLIST */}

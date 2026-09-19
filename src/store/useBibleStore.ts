@@ -45,6 +45,12 @@ export interface HistoryItem {
   timestamp: number;
 }
 
+export interface DailyTimeLog {
+  readingMinutes: number; // Bible reading time in mins
+  prayerMinutes: number;  // Prayer time in mins
+  quietMinutes: number;   // Quiet time in mins
+}
+
 export interface BibleState {
   // Navigation Location
   activeBookId: string;
@@ -69,10 +75,11 @@ export interface BibleState {
   notes: Record<string, StudyNote>;
   history: HistoryItem[];
 
-  // Reading Plans
+  // Reading Plans & Daily Time Tracking
   enrolledPlanIds: string[];
   completedPlanDays: Record<string, number[]>;
   dailyStreak: number;
+  dailyTimeLogs: Record<string, DailyTimeLog>; // `${planId}:${dayNumber}` -> DailyTimeLog
 
   // Audio Player State
   isAudioPlaying: boolean;
@@ -110,6 +117,7 @@ export interface BibleState {
   // Reading Plan actions
   enrollPlan: (planId: string) => void;
   togglePlanDay: (planId: string, dayNumber: number) => void;
+  setDailyTimeLog: (planId: string, dayNumber: number, log: Partial<DailyTimeLog>) => void;
 
   // Audio actions
   setAudioPlaying: (playing: boolean) => void;
@@ -181,6 +189,7 @@ export const useBibleStore = create<BibleState>()(
         'gospels-30': [1, 2],
       },
       dailyStreak: 3,
+      dailyTimeLogs: {},
 
       isAudioPlaying: false,
       playbackSpeed: 1.0,
@@ -318,6 +327,22 @@ export const useBibleStore = create<BibleState>()(
             completedPlanDays: {
               ...state.completedPlanDays,
               [planId]: updatedDays,
+            },
+          };
+        });
+      },
+
+      setDailyTimeLog: (planId, dayNumber, logUpdate) => {
+        set((state) => {
+          const key = `${planId}:${dayNumber}`;
+          const current = state.dailyTimeLogs[key] || { readingMinutes: 15, prayerMinutes: 10, quietMinutes: 10 };
+          return {
+            dailyTimeLogs: {
+              ...state.dailyTimeLogs,
+              [key]: {
+                ...current,
+                ...logUpdate,
+              },
             },
           };
         });
