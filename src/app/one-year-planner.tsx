@@ -148,14 +148,7 @@ export default function OneYearPlannerScreen() {
 
       {/* SACRED MOTIVATIONAL DEVOTIONAL HEADER BANNER */}
       <View style={{ backgroundColor: isDark ? '#171412' : '#FFF9F0', borderBottomWidth: 1, borderBottomColor: palette.border, paddingHorizontal: 18, paddingTop: 14, paddingBottom: 14 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Cross size={16} color={palette.accentGold} />
-            <Text style={{ fontSize: 11, fontWeight: '800', color: palette.accentGold, textTransform: 'uppercase', letterSpacing: 1 }}>
-              CHRIST-CENTERED DAILY PLANNER
-            </Text>
-          </View>
-
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 4 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(217, 119, 6, 0.14)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12 }}>
             <Flame size={13} color="#D97706" />
             <Text style={{ fontSize: 11, fontWeight: '800', color: '#D97706' }}>
@@ -164,7 +157,7 @@ export default function OneYearPlannerScreen() {
           </View>
         </View>
 
-        <Text style={{ fontSize: 13, fontStyle: 'italic', color: palette.textPrimary, marginTop: 4, lineHeight: 18 }}>
+        <Text style={{ fontSize: 13, fontStyle: 'italic', color: palette.textPrimary, marginTop: 2, lineHeight: 18 }}>
           "{dailyDevotional.verse}"
         </Text>
         <Text style={{ fontSize: 11, fontWeight: '700', color: palette.accentGold, marginTop: 2, textAlign: 'right' }}>
