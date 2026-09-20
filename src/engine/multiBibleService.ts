@@ -162,7 +162,6 @@ const BOLLS_CODE_MAP: Record<string, string> = {
   dut: 'DSV',
   dsv: 'DSV',
   sv1637: 'DSV',
-  nld: 'DSV',
   dutch: 'DSV',
   nl: 'DSV',
 
@@ -250,12 +249,72 @@ const BOLLS_CODE_MAP: Record<string, string> = {
   tam: 'TBSI',
   ta: 'TBSI',
 
-  // Telugu
-  bsi_tel: 'TBSI',
-  tel_irv: 'TBSI',
-  tel_fbi: 'TBSI',
-  tel: 'TBSI',
-  te: 'TBSI',
+  // Additional Spanish
+  rv2004: 'RV2004',
+  nvi: 'NVI',
+  ntv: 'NTV',
+  lbla: 'LBLA',
+  pdt: 'PDT',
+
+  // Additional French
+  frdby: 'FRDBY',
+  nbs: 'NBS',
+  bds: 'BDS',
+  frpdv17: 'FRPDV17',
+
+  // Additional German
+  elb: 'ELB',
+  s00: 'S00',
+  hfa: 'HFA',
+  neu: 'NeU',
+
+  // Additional Portuguese
+  nvt_pt: 'NVT_PT',
+  arc09: 'ARC09',
+  acf11: 'ACF11',
+  ntlh: 'NTLH',
+  kja: 'KJA',
+
+  // Additional Russian
+  nrt: 'NRT',
+  rbs2: 'RBS2',
+  bti: 'BTI',
+
+  // Additional Ukrainian
+  ukrk: 'UKRK',
+  hom: 'HOM',
+  umt: 'UMT',
+
+  // Additional Chinese
+  cunp: 'CUNP',
+  pcbs: 'PCBS',
+
+  // Additional Dutch
+  hsv17: 'HSV17',
+  nld: 'NLD',
+
+  // Additional Polish
+  ubg18: 'UBG18',
+  bw: 'BW',
+
+  // Additional Romanian
+  ntr: 'NTR',
+
+  // Additional Japanese
+  njb: 'NJB',
+  jpnict: 'JPNICT',
+
+  // Additional Korean
+  rnksv: 'RNKSV',
+
+  // Additional Arabic
+  nav: 'NAV',
+
+  // Additional Kannada
+  ervkn: 'ERVKN',
+
+  // Additional Nepali
+  neps: 'NEPS',
 };
 
 /**
