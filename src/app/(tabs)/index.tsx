@@ -7,7 +7,7 @@ import { useSpiritualStore } from '../../store/useSpiritualStore';
 import { SpiritualTheme, ScriptureTypography, isTeluguScript } from '../../constants/spiritualTheme';
 import { triggerLightHaptic, triggerMediumHaptic, triggerSuccessHaptic } from '../../services/mobileHaptics';
 import { shareScriptureVerse } from '../../services/mobileShare';
-import { requestMobileNotificationPermissions, scheduleDailySpiritualReminders } from '../../services/mobileNotifications';
+import { useReminderStore } from '../../store/useReminderStore';
 import { BookOpen, Heart, Sparkles, ArrowRight, Share2, CheckCircle2 } from 'lucide-react-native';
 
 export default function HomeScreen() {
@@ -28,57 +28,13 @@ export default function HomeScreen() {
   const isMorningDone = morningCompletedDates.includes(todayStr);
 
   useEffect(() => {
-    // Initialize mobile push notification permissions & reminders schedule
-    requestMobileNotificationPermissions().then((granted) => {
-      if (granted) {
-        scheduleDailySpiritualReminders({
-          enabled: user.notificationsEnabled,
-          soundEnabled: user.notificationSoundEnabled !== false,
-          vibrateEnabled: user.notificationVibrateEnabled !== false,
-          showVerseSnippet: user.notificationShowVerseSnippet !== false,
-          userName: user.displayName,
-          personalizedGreeting: user.notificationPersonalizedGreeting !== false,
-          activeDays: user.notificationActiveDays || 'everyday',
-
-          bibleReadingEnabled: user.bibleReadingEnabled !== false,
-          bibleReadingTime: user.bibleReadingTime || user.notificationTime || '07:00 AM',
-          verseReference: todayScripture?.reference,
-          verseSnippet: todayScripture?.verseText,
-
-          morningPrayerEnabled: user.morningPrayerEnabled !== false,
-          morningPrayerTime: user.morningPrayerTime || '08:30 AM',
-
-          afternoonPrayerEnabled: user.afternoonPrayerEnabled !== false,
-          afternoonPrayerTime: user.afternoonPrayerTime || '01:00 PM',
-
-          eveningPrayerEnabled: user.eveningPrayerEnabled !== false,
-          eveningPrayerTime: user.eveningPrayerTime || '07:00 PM',
-
-          nightPrayerEnabled: user.nightPrayerEnabled !== false,
-          nightPrayerTime: user.nightPrayerTime || '09:30 PM',
-        });
+    // Non-intrusively verify device permission status and sync scheduled reminders if already granted
+    useReminderStore.getState().checkDevicePermissions().then((status) => {
+      if (status === 'granted') {
+        useReminderStore.getState().syncAllScheduledNotifications();
       }
     });
-  }, [
-    user.notificationsEnabled,
-    user.notificationSoundEnabled,
-    user.notificationVibrateEnabled,
-    user.notificationShowVerseSnippet,
-    user.notificationPersonalizedGreeting,
-    user.notificationActiveDays,
-    user.displayName,
-    user.bibleReadingEnabled,
-    user.bibleReadingTime,
-    user.morningPrayerEnabled,
-    user.morningPrayerTime,
-    user.afternoonPrayerEnabled,
-    user.afternoonPrayerTime,
-    user.eveningPrayerEnabled,
-    user.eveningPrayerTime,
-    user.nightPrayerEnabled,
-    user.nightPrayerTime,
-    todayScripture,
-  ]);
+  }, []);
 
   const getGreeting = () => {
     const hour = new Date().getHours();

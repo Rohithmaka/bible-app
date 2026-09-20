@@ -1,16 +1,18 @@
 import { useEffect } from 'react';
 import { View, Platform } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import { useBibleStore } from '../store/useBibleStore';
+import { initNotificationChannels, setupNotificationListeners } from '../services/reminderNotificationService';
 
 const queryClient = new QueryClient();
 
 export default function RootLayout() {
+  const router = useRouter();
   const { themeMode } = useBibleStore();
   const isDark = themeMode === 'dark';
 
@@ -21,6 +23,15 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
+    initNotificationChannels();
+    const unsubscribe = setupNotificationListeners((route) => {
+      try {
+        router.push(route as any);
+      } catch (e) {
+        console.warn('Deep link navigation error:', e);
+      }
+    });
+
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
       const linkId = 'mandali-google-font';
       if (!document.getElementById(linkId)) {
@@ -31,6 +42,8 @@ export default function RootLayout() {
         document.head.appendChild(link);
       }
     }
+
+    return () => unsubscribe();
   }, []);
 
   const outerBg = isDark ? '#0A0C0E' : '#E8E2D7';
@@ -92,6 +105,10 @@ export default function RootLayout() {
                 <Stack.Screen
                   name="onboarding-flow"
                   options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+                />
+                <Stack.Screen
+                  name="reminders"
+                  options={{ presentation: 'card', animation: 'slide_from_right' }}
                 />
               </Stack>
             </View>

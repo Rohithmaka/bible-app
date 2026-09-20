@@ -270,3 +270,31 @@ CREATE POLICY "Users manage own notes" ON public.verse_notes FOR ALL USING (auth
 CREATE POLICY "Users read own history" ON public.reading_history FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users record history" ON public.reading_history FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+-- ========================================================
+-- 9. SPIRITUAL REMINDERS TABLE (CUSTOMIZABLE PRAYER & BIBLE)
+-- ========================================================
+CREATE TABLE IF NOT EXISTS public.reminders (
+  id TEXT PRIMARY KEY,
+  user_id TEXT DEFAULT 'anonymous',
+  type TEXT NOT NULL CHECK (type IN ('prayer', 'bible_reading', 'devotional', 'verse_of_day', 'custom')),
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  time TEXT NOT NULL,
+  repeat_type TEXT NOT NULL CHECK (repeat_type IN ('daily', 'specific_days', 'weekdays', 'weekends', 'once')),
+  selected_days JSONB DEFAULT '[0,1,2,3,4,5,6]'::jsonb,
+  enabled BOOLEAN DEFAULT TRUE,
+  sound_enabled BOOLEAN DEFAULT TRUE,
+  vibration_enabled BOOLEAN DEFAULT TRUE,
+  destination TEXT DEFAULT 'home',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_reminders_user_type ON public.reminders(user_id, type);
+ALTER TABLE public.reminders ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow read reminders" ON public.reminders FOR SELECT USING (true);
+CREATE POLICY "Allow insert reminders" ON public.reminders FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow update reminders" ON public.reminders FOR UPDATE USING (true);
+CREATE POLICY "Allow delete reminders" ON public.reminders FOR DELETE USING (true);
+
+

@@ -29,7 +29,9 @@
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
-        "NOTIFICATIONS"
+        "NOTIFICATIONS",
+        "POST_NOTIFICATIONS",
+        "SCHEDULE_EXACT_ALARM"
       ],
       "predictiveBackGestureEnabled": true
     },
@@ -48,7 +50,8 @@
         }
       ],
       "expo-image",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true,
