@@ -40,12 +40,32 @@ CREATE TABLE IF NOT EXISTS public.user_profiles (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id TEXT UNIQUE,
   display_name TEXT,
+  email TEXT,
+  age INT,
+  location TEXT,
+  spiritual_stage INT DEFAULT 5,
+  spiritual_stage_title TEXT DEFAULT 'Growing Disciple',
   growth_goals JSONB,
   time_commitment TEXT,
   time_of_day TEXT,
   bookmarks JSONB,
   highlights JSONB,
   notes JSONB,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Alias table for profiles
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  display_name TEXT,
+  email TEXT,
+  age INT,
+  location TEXT,
+  spiritual_stage INT DEFAULT 5,
+  spiritual_stage_title TEXT DEFAULT 'Growing Disciple',
+  growth_goals JSONB,
+  time_commitment TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 

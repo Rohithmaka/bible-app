@@ -133,9 +133,95 @@ export interface MemoryVerse {
   lastReviewedAt?: number;
 }
 
+export interface SpiritualStageInfo {
+  step: number;
+  title: string;
+  badge: string;
+  description: string;
+  scriptureAnchor: string;
+}
+
+export const SPIRITUAL_STAGES: SpiritualStageInfo[] = [
+  {
+    step: 1,
+    title: 'The Inquirer',
+    badge: '1 / 10',
+    description: 'Exploring spiritual questions, seeking truth, and curious about God.',
+    scriptureAnchor: 'Jeremiah 29:13',
+  },
+  {
+    step: 2,
+    title: 'The New Believer',
+    badge: '2 / 10',
+    description: 'Freshly starting the faith walk, learning the basics of grace and salvation.',
+    scriptureAnchor: '2 Corinthians 5:17',
+  },
+  {
+    step: 3,
+    title: 'Tender Sprout',
+    badge: '3 / 10',
+    description: 'Beginning to open the Bible regularly and learning how to pray honest prayers.',
+    scriptureAnchor: '1 Peter 2:2',
+  },
+  {
+    step: 4,
+    title: 'Eager Learner',
+    badge: '4 / 10',
+    description: 'Developing a hunger for scripture, asking questions, and seeking Christian community.',
+    scriptureAnchor: 'Matthew 5:6',
+  },
+  {
+    step: 5,
+    title: 'Growing Disciple',
+    badge: '5 / 10',
+    description: 'Consistent daily scripture reading, learning to trust God in personal decisions.',
+    scriptureAnchor: 'Colossians 2:6-7',
+  },
+  {
+    step: 6,
+    title: 'Rooted Believer',
+    badge: '6 / 10',
+    description: 'Overcoming life doubts, understanding biblical context, standing firm against temptation.',
+    scriptureAnchor: 'Ephesians 3:17',
+  },
+  {
+    step: 7,
+    title: 'Steadfast Follower',
+    badge: '7 / 10',
+    description: 'Navigating life trials with unwavering faith, letting the Holy Spirit guide daily actions.',
+    scriptureAnchor: 'James 1:2-4',
+  },
+  {
+    step: 8,
+    title: 'Fruitful Servant',
+    badge: '8 / 10',
+    description: 'Actively serving others, showing Christ’s love in practical ways, and sharing personal testimony.',
+    scriptureAnchor: 'Galatians 5:22-23',
+  },
+  {
+    step: 9,
+    title: 'Prayer Warrior & Guide',
+    badge: '9 / 10',
+    description: 'Interceding deeply for others, mentoring newer believers, and carrying spiritual burdens.',
+    scriptureAnchor: '1 Thessalonians 5:16-18',
+  },
+  {
+    step: 10,
+    title: 'Mature Ambassador',
+    badge: '10 / 10',
+    description: 'A life thoroughly surrendered to Christ, possessing deep spiritual discernment and peace.',
+    scriptureAnchor: 'Philippians 3:12-14',
+  },
+];
+
 export interface SpiritualUserState {
   uid: string | null;
   displayName: string;
+  age?: string;
+  location?: string;
+  email?: string;
+  spiritualStage: number; // 1 to 10
+  spiritualStageTitle: string; // e.g. "Growing Disciple"
   onboarded: boolean;
   growthGoals: GrowthGoal[];
   timeCommitment: TimeCommitment;
@@ -344,6 +430,11 @@ export const useSpiritualStore = create<SpiritualState>()(
       user: {
         uid: null,
         displayName: 'Friend',
+        age: '25',
+        location: '',
+        email: '',
+        spiritualStage: 5,
+        spiritualStageTitle: 'Growing Disciple',
         onboarded: true,
         growthGoals: ['faith', 'peace', 'prayer', 'wisdom'],
         timeCommitment: '15 min',

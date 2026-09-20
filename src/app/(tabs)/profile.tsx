@@ -6,7 +6,7 @@ import { useBibleStore } from '../../store/useBibleStore';
 import { useSpiritualStore } from '../../store/useSpiritualStore';
 import { SpiritualTheme } from '../../constants/spiritualTheme';
 import { triggerLightHaptic } from '../../services/mobileHaptics';
-import { User, BookOpen, Heart, Sparkles, Bookmark, Highlighter, Brain, Settings, Moon, Sun, Bell, ChevronRight, Edit2, X, Check } from 'lucide-react-native';
+import { User, BookOpen, Heart, Sparkles, Bookmark, Highlighter, Brain, Settings, Moon, Sun, Bell, ChevronRight, Edit2, X, Check, Compass, MapPin, Mail, ArrowRight } from 'lucide-react-native';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -20,6 +20,8 @@ export default function ProfileScreen() {
   const palette = isDark ? SpiritualTheme.dark : SpiritualTheme.light;
 
   const answeredPrayers = privatePrayers.filter((p) => p.status === 'answered');
+  const stageNumber = user.spiritualStage || 5;
+  const stageTitle = user.spiritualStageTitle || 'Growing Disciple';
 
   const handleSaveName = () => {
     if (editedName.trim()) {
@@ -37,7 +39,7 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* User Header */}
-        <View style={{ alignItems: 'center', marginBottom: 24, paddingHorizontal: 8 }}>
+        <View style={{ alignItems: 'center', marginBottom: 20, paddingHorizontal: 8 }}>
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={() => {
@@ -67,9 +69,91 @@ export default function ProfileScreen() {
             <Edit2 size={14} color={palette.accentGreen} />
           </TouchableOpacity>
 
-          <Text style={{ fontSize: 13, color: palette.textSecondary, marginTop: 4, textAlign: 'center', flexWrap: 'wrap', paddingHorizontal: 16 }}>
-            Growing in {user.growthGoals.slice(0, 2).join(' & ')} • {user.timeCommitment} daily
+          {/* Demographic Subtitle: Age & Location & Email */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 4 }}>
+            {user.age ? (
+              <Text style={{ fontSize: 13, color: palette.textSecondary, fontWeight: '600' }}>
+                {user.age} yrs
+              </Text>
+            ) : null}
+            {user.age && user.location ? <Text style={{ color: palette.textMuted }}>•</Text> : null}
+            {user.location ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                <MapPin size={12} color={palette.textSecondary} />
+                <Text style={{ fontSize: 13, color: palette.textSecondary, fontWeight: '600' }}>
+                  {user.location}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+
+          {user.email ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
+              <Mail size={12} color={palette.textMuted} />
+              <Text style={{ fontSize: 12, color: palette.textMuted }}>{user.email}</Text>
+            </View>
+          ) : null}
+        </View>
+
+        {/* SPIRITUAL JOURNEY STAGE CARD */}
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: isDark ? 'rgba(217, 119, 6, 0.08)' : 'rgba(217, 119, 6, 0.06)',
+              borderColor: palette.accentGold,
+              paddingVertical: 16,
+              marginBottom: 16,
+            },
+          ]}
+        >
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Compass size={18} color={palette.accentGold} />
+              <Text style={{ fontSize: 14, fontWeight: '800', color: palette.accentGold, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Spiritual Journey Stage
+              </Text>
+            </View>
+            <View style={{ backgroundColor: palette.accentGold, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
+              <Text style={{ fontSize: 12, fontWeight: '800', color: '#FFFFFF' }}>
+                Step {stageNumber} / 10
+              </Text>
+            </View>
+          </View>
+
+          <Text style={{ fontSize: 18, fontWeight: '800', color: palette.textPrimary, marginBottom: 4 }}>
+            {stageTitle}
           </Text>
+
+          <Text style={{ fontSize: 13, color: palette.textSecondary, marginBottom: 12 }}>
+            Growing in {user.growthGoals.slice(0, 3).join(', ')} • {user.timeCommitment} daily
+          </Text>
+
+          {/* Progress Bar */}
+          <View style={{ height: 6, backgroundColor: 'rgba(156, 163, 175, 0.2)', borderRadius: 3, overflow: 'hidden', marginBottom: 14 }}>
+            <View style={{ height: '100%', width: `${(stageNumber / 10) * 100}%`, backgroundColor: palette.accentGold, borderRadius: 3 }} />
+          </View>
+
+          <TouchableOpacity
+            onPress={() => {
+              triggerLightHaptic();
+              router.push('/onboarding-flow' as any);
+            }}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              paddingVertical: 10,
+              borderRadius: 10,
+              backgroundColor: 'rgba(217, 119, 6, 0.15)',
+            }}
+          >
+            <Text style={{ fontSize: 13, fontWeight: '700', color: palette.accentGold }}>
+              Update Spiritual Stage & Routine
+            </Text>
+            <ArrowRight size={14} color={palette.accentGold} />
+          </TouchableOpacity>
         </View>
 
         {/* 1. MY BIBLE SECTION */}
