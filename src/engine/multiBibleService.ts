@@ -38,6 +38,15 @@ function getBookIndex(bookId: string): number {
  * Maps translation ID to Bolls API short codes
  */
 const BOLLS_CODE_MAP: Record<string, string> = {
+  // English
+  web: 'WEB',
+  asv: 'ASV',
+  bbe: 'BBE',
+  darby: 'DRB',
+  dra: 'DRB',
+  geneva: 'GNV',
+  ylt: 'YLT',
+
   // Spanish
   rvr: 'RV1960',
   rvr1909: 'RV1960',
@@ -270,8 +279,8 @@ export async function fetchChapterVerses(
     return verseCache[cacheKey];
   }
 
-  // 2. Local storage check for built-in public domain datasets (KJV / WEB)
-  if (normTransId === 'kjv' || normTransId === 'web') {
+  // 2. Local storage check for built-in public domain dataset (KJV)
+  if (normTransId === 'kjv') {
     return getChapterVerses(bookId, chapter);
   }
 
