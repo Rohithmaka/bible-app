@@ -228,6 +228,19 @@ export interface SpiritualUserState {
   timeOfDay: TimeOfDay;
   notificationTime: string; // e.g. "07:00 AM"
   notificationsEnabled: boolean;
+
+  // Dedicated Reminders: Bible reading & short prayer throughout the day
+  bibleReadingTime?: string; // default "07:00 AM"
+  morningPrayerTime?: string; // default "08:30 AM"
+  afternoonPrayerTime?: string; // default "01:00 PM"
+  eveningPrayerTime?: string; // default "07:00 PM"
+  nightPrayerTime?: string; // default "09:30 PM"
+
+  bibleReadingEnabled?: boolean;
+  morningPrayerEnabled?: boolean;
+  afternoonPrayerEnabled?: boolean;
+  eveningPrayerEnabled?: boolean;
+  nightPrayerEnabled?: boolean;
 }
 
 export interface SpiritualState {
@@ -441,6 +454,16 @@ export const useSpiritualStore = create<SpiritualState>()(
         timeOfDay: 'morning',
         notificationTime: '07:00 AM',
         notificationsEnabled: true,
+        bibleReadingTime: '07:00 AM',
+        morningPrayerTime: '08:30 AM',
+        afternoonPrayerTime: '01:00 PM',
+        eveningPrayerTime: '07:00 PM',
+        nightPrayerTime: '09:30 PM',
+        bibleReadingEnabled: true,
+        morningPrayerEnabled: true,
+        afternoonPrayerEnabled: true,
+        eveningPrayerEnabled: true,
+        nightPrayerEnabled: true,
       },
       todayScripture: INITIAL_DAILY_SCRIPTURE,
       morningCompletedDates: [],

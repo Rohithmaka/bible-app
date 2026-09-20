@@ -32,15 +32,40 @@ export default function HomeScreen() {
     requestMobileNotificationPermissions().then((granted) => {
       if (granted) {
         scheduleDailySpiritualReminders({
-          morningTime: user.notificationTime || '07:00 AM',
-          eveningTime: '09:00 PM',
+          enabled: user.notificationsEnabled,
+          bibleReadingEnabled: user.bibleReadingEnabled !== false,
+          bibleReadingTime: user.bibleReadingTime || user.notificationTime || '07:00 AM',
           verseReference: todayScripture?.reference,
           verseSnippet: todayScripture?.verseText,
-          enabled: user.notificationsEnabled,
+
+          morningPrayerEnabled: user.morningPrayerEnabled !== false,
+          morningPrayerTime: user.morningPrayerTime || '08:30 AM',
+
+          afternoonPrayerEnabled: user.afternoonPrayerEnabled !== false,
+          afternoonPrayerTime: user.afternoonPrayerTime || '01:00 PM',
+
+          eveningPrayerEnabled: user.eveningPrayerEnabled !== false,
+          eveningPrayerTime: user.eveningPrayerTime || '07:00 PM',
+
+          nightPrayerEnabled: user.nightPrayerEnabled !== false,
+          nightPrayerTime: user.nightPrayerTime || '09:30 PM',
         });
       }
     });
-  }, [user.notificationsEnabled, user.notificationTime, todayScripture]);
+  }, [
+    user.notificationsEnabled,
+    user.bibleReadingEnabled,
+    user.bibleReadingTime,
+    user.morningPrayerEnabled,
+    user.morningPrayerTime,
+    user.afternoonPrayerEnabled,
+    user.afternoonPrayerTime,
+    user.eveningPrayerEnabled,
+    user.eveningPrayerTime,
+    user.nightPrayerEnabled,
+    user.nightPrayerTime,
+    todayScripture,
+  ]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
