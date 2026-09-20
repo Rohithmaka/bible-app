@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -23,7 +23,7 @@ export default function BattleResultScreen() {
   const tasks = store.tasks;
   const history = store.battleHistory;
 
-  const flashAnim = useRef(new Animated.Value(0)).current;
+  const [flashAnim] = useState(() => new Animated.Value(0));
 
   // Retrieve the latest resolved result from history or current battle
   const resolvedBattle = history[0] || {

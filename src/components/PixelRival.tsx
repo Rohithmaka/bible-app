@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Animated, Easing, StyleSheet } from 'react-native';
 import Svg, { Rect, G, Path } from 'react-native-svg';
 
@@ -169,10 +169,10 @@ export const PixelRival: React.FC<PixelRivalProps> = ({
   animationState,
   size = 120
 }) => {
-  const floatAnim = useRef(new Animated.Value(0)).current;
-  const shakeAnim = useRef(new Animated.Value(0)).current;
-  const jumpAnim = useRef(new Animated.Value(0)).current;
-  const opacityAnim = useRef(new Animated.Value(1)).current;
+  const [floatAnim] = useState(() => new Animated.Value(0));
+  const [shakeAnim] = useState(() => new Animated.Value(0));
+  const [jumpAnim] = useState(() => new Animated.Value(0));
+  const [opacityAnim] = useState(() => new Animated.Value(1));
 
   useEffect(() => {
     // Reset animations
