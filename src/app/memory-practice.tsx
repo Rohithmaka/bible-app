@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useBibleStore } from '../store/useBibleStore';
 import { useSpiritualStore, MemoryVerse } from '../store/useSpiritualStore';
-import { SpiritualTheme, ScriptureTypography } from '../constants/spiritualTheme';
+import { SpiritualTheme, ScriptureTypography, isTeluguScript } from '../constants/spiritualTheme';
 import { Brain, ChevronLeft, Eye, EyeOff, CheckCircle2, RotateCcw } from 'lucide-react-native';
 
 export default function MemoryPracticeScreen() {
@@ -70,7 +70,10 @@ export default function MemoryPracticeScreen() {
 
                 <Text
                   style={{
-                    fontFamily: ScriptureTypography.fontFamilySerif,
+                    fontFamily: isTeluguScript(mv.text)
+                      ? (Platform.OS === 'android' ? 'Mandali-Bold' : 'Mandali')
+                      : ScriptureTypography.fontFamilySerif,
+                    fontWeight: isTeluguScript(mv.text) ? '700' : '400',
                     fontSize: 17,
                     lineHeight: 26,
                     color: palette.textPrimary,

@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, TextInput, StyleSheet, SafeAr
 import { useRouter } from 'expo-router';
 import { useBibleStore } from '../../store/useBibleStore';
 import { searchBible, SearchResult } from '../../engine/bibleEngine';
+import { isTeluguScript } from '../../constants/spiritualTheme';
 import { Search, X, BookOpen, ChevronRight, Tag } from 'lucide-react-native';
 
 const POPULAR_SEARCHES = ['Love', 'Light', 'Peace', 'Hope', 'Faith', 'Forgiveness', 'Strength', 'Shepherd', 'Kingdom'];
@@ -126,7 +127,17 @@ export default function SearchScreen() {
                     <Text style={styles.testamentTag}>{res.testament}</Text>
                   </View>
 
-                  <Text style={[styles.verseSnippet, { color: textColor }]}>"{res.text}"</Text>
+                  <Text
+                    style={[
+                      styles.verseSnippet,
+                      isTeluguScript(res.text)
+                        ? { fontFamily: Platform.OS === 'android' ? 'Mandali-Bold' : 'Mandali', fontWeight: '700' }
+                        : null,
+                      { color: textColor },
+                    ]}
+                  >
+                    "{res.text}"
+                  </Text>
 
                   <View style={styles.readLinkRow}>
                     <Text style={styles.readLinkText}>Jump to Chapter</Text>

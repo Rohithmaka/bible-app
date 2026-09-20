@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Pla
 import { useRouter } from 'expo-router';
 import { useBibleStore, HighlightColor } from '../../store/useBibleStore';
 import { BIBLE_READING_PLANS } from '../../data/bibleData';
+import { isTeluguScript } from '../../constants/spiritualTheme';
 import { Bookmark, Sparkles, FileText, Calendar, Trash2, CheckSquare, Square, Edit3 } from 'lucide-react-native';
 
 const COLOR_MAP: Record<HighlightColor, string> = {
@@ -130,7 +131,17 @@ export default function LibraryScreen() {
                     <Text style={styles.verseRefText}>
                       {bm.bookName} {bm.chapter}:{bm.verse}
                     </Text>
-                    <Text style={[styles.verseBodyText, { color: textColor }]}>"{bm.text}"</Text>
+                    <Text
+                      style={[
+                        styles.verseBodyText,
+                        isTeluguScript(bm.text)
+                          ? { fontFamily: Platform.OS === 'android' ? 'Mandali-Bold' : 'Mandali', fontWeight: '700' }
+                          : null,
+                        { color: textColor },
+                      ]}
+                    >
+                      "{bm.text}"
+                    </Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => removeBookmark(bm.id)} style={styles.deleteIconBtn}>
                     <Trash2 size={16} color="#EF4444" />
@@ -169,7 +180,17 @@ export default function LibraryScreen() {
                       </Text>
                       <View style={[styles.colorBadge, { backgroundColor: COLOR_MAP[hl.color] }]} />
                     </View>
-                    <Text style={[styles.verseBodyText, { color: textColor }]}>"{hl.text}"</Text>
+                    <Text
+                      style={[
+                        styles.verseBodyText,
+                        isTeluguScript(hl.text)
+                          ? { fontFamily: Platform.OS === 'android' ? 'Mandali-Bold' : 'Mandali', fontWeight: '700' }
+                          : null,
+                        { color: textColor },
+                      ]}
+                    >
+                      "{hl.text}"
+                    </Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => removeHighlight(hl.verseKey)} style={styles.deleteIconBtn}>
                     <Trash2 size={16} color="#EF4444" />

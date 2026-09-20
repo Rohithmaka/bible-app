@@ -5,7 +5,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useBibleStore } from '../store/useBibleStore';
 import { useSpiritualStore } from '../store/useSpiritualStore';
 import { BIBLE_BOOKS, getChapterVerses } from '../data/bibleData';
-import { SpiritualTheme, ScriptureTypography } from '../constants/spiritualTheme';
+import { SpiritualTheme, ScriptureTypography, isTeluguScript } from '../constants/spiritualTheme';
 import { triggerSuccessHaptic, triggerLightHaptic } from '../services/mobileHaptics';
 import { X, Sparkles } from 'lucide-react-native';
 
@@ -94,7 +94,18 @@ export default function StudyWorkspaceScreen() {
             <Text style={{ fontSize: 12, fontWeight: '700', color: palette.accentGold, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
               1. Selected Scripture ({book.name} {chapter}:{targetVerse.verse})
             </Text>
-            <Text style={{ fontFamily: ScriptureTypography.fontFamilySerif, fontSize: 17, lineHeight: 26, color: palette.textPrimary, fontStyle: 'italic' }}>
+            <Text
+              style={{
+                fontFamily: isTeluguScript(targetVerse.text)
+                  ? (Platform.OS === 'android' ? 'Mandali-Bold' : 'Mandali')
+                  : ScriptureTypography.fontFamilySerif,
+                fontWeight: isTeluguScript(targetVerse.text) ? '700' : '400',
+                fontStyle: isTeluguScript(targetVerse.text) ? 'normal' : 'italic',
+                fontSize: 17,
+                lineHeight: 26,
+                color: palette.textPrimary,
+              }}
+            >
               "{targetVerse.text}"
             </Text>
           </View>

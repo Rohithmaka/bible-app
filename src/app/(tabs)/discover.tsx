@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Ima
 import { useRouter } from 'expo-router';
 import { useBibleStore } from '../../store/useBibleStore';
 import { DAILY_DEVOTIONAL, TOPICAL_CATEGORIES, BIBLE_READING_PLANS } from '../../data/bibleData';
+import { isTeluguScript } from '../../constants/spiritualTheme';
 import { Flame, Sparkles, Heart, Shield, Zap, Compass, Share2, BookOpen, CheckCircle, ArrowRight } from 'lucide-react-native';
 
 export default function DiscoverScreen() {
@@ -55,7 +56,16 @@ export default function DiscoverScreen() {
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.heroVerseText}>"{DAILY_DEVOTIONAL.keyVerse.text}"</Text>
+          <Text
+            style={[
+              styles.heroVerseText,
+              isTeluguScript(DAILY_DEVOTIONAL.keyVerse.text)
+                ? { fontFamily: Platform.OS === 'android' ? 'Mandali-Bold' : 'Mandali', fontWeight: '700' }
+                : null,
+            ]}
+          >
+            "{DAILY_DEVOTIONAL.keyVerse.text}"
+          </Text>
           <Text style={styles.heroVerseRef}>
             — {DAILY_DEVOTIONAL.keyVerse.bookName} {DAILY_DEVOTIONAL.keyVerse.chapter}:{DAILY_DEVOTIONAL.keyVerse.verse}
           </Text>

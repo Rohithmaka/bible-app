@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 export const SpiritualTheme = {
   light: {
     background: '#FAF7F2',     // Warm Linen/Cream
@@ -52,4 +54,45 @@ export const ScriptureTypography = {
   },
   lineHeightRatio: 1.6,
   fontFamilySerif: 'Georgia',
+  fontFamilyTelugu: 'Mandali-Bold',
+  fontFamilyTeluguRegular: 'Mandali',
 };
+
+/**
+ * Detects whether a given text string contains Telugu script Unicode characters.
+ * Telugu Unicode block ranges from \u0C00 to \u0C7F.
+ */
+export const isTeluguScript = (text?: string): boolean => {
+  if (!text) return false;
+  return /[\u0C00-\u0C7F]/.test(text);
+};
+
+/**
+ * Resolves font family and style attributes for scripture text.
+ * When Telugu script or Telugu translation is active, returns Mandali Bold.
+ */
+export const getScriptureFontStyle = (
+  isTelugu: boolean,
+  userPreference: 'auto' | 'mandali' | 'serif' | 'sans' = 'auto'
+) => {
+  if (userPreference === 'mandali' || (userPreference === 'auto' && isTelugu)) {
+    return {
+      fontFamily: Platform.OS === 'android' ? 'Mandali-Bold' : 'Mandali',
+      fontWeight: '700' as const,
+      letterSpacing: 0.2,
+    };
+  }
+
+  if (userPreference === 'serif') {
+    return {
+      fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+      fontWeight: '400' as const,
+    };
+  }
+
+  return {
+    fontFamily: undefined,
+    fontWeight: '400' as const,
+  };
+};
+

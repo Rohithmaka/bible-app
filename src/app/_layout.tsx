@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useFonts } from 'expo-font';
 import { useBibleStore } from '../store/useBibleStore';
 
 const queryClient = new QueryClient();
@@ -12,6 +13,25 @@ const queryClient = new QueryClient();
 export default function RootLayout() {
   const { themeMode } = useBibleStore();
   const isDark = themeMode === 'dark';
+
+  const [fontsLoaded] = useFonts({
+    'Mandali': require('../../assets/fonts/Mandali.ttf'),
+    'Mandali-Bold': require('../../assets/fonts/Mandali-Bold.ttf'),
+    'Mandali-Regular': require('../../assets/fonts/Mandali-Regular.ttf'),
+  });
+
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      const linkId = 'mandali-google-font';
+      if (!document.getElementById(linkId)) {
+        const link = document.createElement('link');
+        link.id = linkId;
+        link.rel = 'stylesheet';
+        link.href = 'https://fonts.googleapis.com/css2?family=Mandali&display=swap';
+        document.head.appendChild(link);
+      }
+    }
+  }, []);
 
   const outerBg = isDark ? '#0A0C0E' : '#E8E2D7';
   const innerBg = isDark ? '#121417' : '#FAF7F2';

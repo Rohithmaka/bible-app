@@ -4,6 +4,7 @@ import { storage } from '../storage/storage';
 
 export type HighlightColor = 'gold' | 'sapphire' | 'emerald' | 'rose' | 'purple';
 export type ThemeMode = 'light' | 'dark' | 'sepia';
+export type ReadingFontFamily = 'auto' | 'mandali' | 'serif' | 'sans';
 export type BibleTranslation = string;
 
 export interface Bookmark {
@@ -64,6 +65,7 @@ export interface BibleState {
 
   // Visual & Reading Customizations
   themeMode: ThemeMode;
+  fontFamily: ReadingFontFamily;
   fontSize: 'sm' | 'md' | 'lg' | 'xl';
   lineSpacing: 'normal' | 'relaxed' | 'spacious';
   verseSpacing: 'compact' | 'normal' | 'spacious';
@@ -99,6 +101,7 @@ export interface BibleState {
   toggleParallelTranslation: (translationId: string) => void;
 
   setThemeMode: (themeMode: ThemeMode) => void;
+  setFontFamily: (fontFamily: ReadingFontFamily) => void;
   setFontSize: (fontSize: 'sm' | 'md' | 'lg' | 'xl') => void;
   setLineSpacing: (spacing: 'normal' | 'relaxed' | 'spacious') => void;
   setVerseSpacing: (spacing: 'compact' | 'normal' | 'spacious') => void;
@@ -153,6 +156,7 @@ export const useBibleStore = create<BibleState>()(
       parallelTranslations: ['KJV', 'WEB', 'TEL_IRV'],
 
       themeMode: 'light',
+      fontFamily: 'auto',
       fontSize: 'md',
       lineSpacing: 'relaxed',
       verseSpacing: 'normal',
@@ -241,6 +245,7 @@ export const useBibleStore = create<BibleState>()(
       },
 
       setThemeMode: (themeMode) => set({ themeMode }),
+      setFontFamily: (fontFamily) => set({ fontFamily }),
       setFontSize: (fontSize) => set({ fontSize }),
       setLineSpacing: (lineSpacing) => set({ lineSpacing }),
       setVerseSpacing: (verseSpacing) => set({ verseSpacing }),

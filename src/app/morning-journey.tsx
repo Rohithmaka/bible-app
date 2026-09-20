@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useBibleStore } from '../store/useBibleStore';
 import { useSpiritualStore } from '../store/useSpiritualStore';
-import { SpiritualTheme, ScriptureTypography } from '../constants/spiritualTheme';
+import { SpiritualTheme, ScriptureTypography, isTeluguScript } from '../constants/spiritualTheme';
 import { Sun, ArrowRight, CheckCircle2, X, Sparkles, BookOpen, Heart } from 'lucide-react-native';
 
 export default function MorningJourneyScreen() {
@@ -55,11 +55,14 @@ export default function MorningJourneyScreen() {
             <View style={{ backgroundColor: palette.card, borderRadius: 20, padding: 24, borderWidth: 1, borderColor: palette.cardBorder }}>
               <Text
                 style={{
-                  fontFamily: ScriptureTypography.fontFamilySerif,
+                  fontFamily: isTeluguScript(todayScripture.verseText)
+                    ? (Platform.OS === 'android' ? 'Mandali-Bold' : 'Mandali')
+                    : ScriptureTypography.fontFamilySerif,
+                  fontWeight: isTeluguScript(todayScripture.verseText) ? '700' : '400',
+                  fontStyle: isTeluguScript(todayScripture.verseText) ? 'normal' : 'italic',
                   fontSize: ScriptureTypography.fontSize.lg,
                   lineHeight: ScriptureTypography.fontSize.lg * ScriptureTypography.lineHeightRatio,
                   color: palette.textPrimary,
-                  fontStyle: 'italic',
                 }}
               >
                 "{todayScripture.verseText}"

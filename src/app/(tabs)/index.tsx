@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useBibleStore } from '../../store/useBibleStore';
 import { useSpiritualStore } from '../../store/useSpiritualStore';
-import { SpiritualTheme, ScriptureTypography } from '../../constants/spiritualTheme';
+import { SpiritualTheme, ScriptureTypography, isTeluguScript } from '../../constants/spiritualTheme';
 import { triggerLightHaptic, triggerMediumHaptic, triggerSuccessHaptic } from '../../services/mobileHaptics';
 import { shareScriptureVerse } from '../../services/mobileShare';
 import { requestMobileNotificationPermissions, scheduleDailySpiritualReminders } from '../../services/mobileNotifications';
@@ -260,18 +260,31 @@ export default function HomeScreen() {
 
             <Text
               style={{
-                fontFamily: ScriptureTypography.fontFamilySerif,
+                fontFamily: isTeluguScript(todayScripture.verseText)
+                  ? (Platform.OS === 'android' ? 'Mandali-Bold' : 'Mandali')
+                  : ScriptureTypography.fontFamilySerif,
+                fontWeight: isTeluguScript(todayScripture.verseText) ? '700' : '400',
+                fontStyle: isTeluguScript(todayScripture.verseText) ? 'normal' : 'italic',
                 fontSize: ScriptureTypography.fontSize.lg,
                 lineHeight: ScriptureTypography.fontSize.lg * ScriptureTypography.lineHeightRatio,
                 color: palette.textPrimary,
-                fontStyle: 'italic',
                 marginBottom: 12,
               }}
             >
               "{todayScripture.verseText}"
             </Text>
 
-            <Text style={{ fontSize: 15, fontWeight: '700', color: palette.accentGreen, marginBottom: 16 }}>
+            <Text
+              style={{
+                fontFamily: isTeluguScript(todayScripture.reference)
+                  ? (Platform.OS === 'android' ? 'Mandali-Bold' : 'Mandali')
+                  : undefined,
+                fontSize: 15,
+                fontWeight: '700',
+                color: palette.accentGreen,
+                marginBottom: 16,
+              }}
+            >
               — {todayScripture.reference}
             </Text>
 

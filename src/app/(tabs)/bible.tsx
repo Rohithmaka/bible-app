@@ -9,16 +9,17 @@ import {
   ActivityIndicator,
   TextInput,
   StyleSheet,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useBibleStore, HighlightColor, ThemeMode } from '../../store/useBibleStore';
+import { useBibleStore, HighlightColor, ThemeMode, ReadingFontFamily } from '../../store/useBibleStore';
 import { useSpiritualStore } from '../../store/useSpiritualStore';
 import { BIBLE_BOOKS, Verse } from '../../data/bibleData';
 import { getNextChapterLocation, getPrevChapterLocation, formatVerseShareText, getLocalizedBookName } from '../../engine/bibleEngine';
 import { fetchChapterVerses, fetchParallelChapterVerses, ParallelChapterResult } from '../../engine/multiBibleService';
 import { TRANSLATION_CATALOG, getTranslationInfo, SUPPORTED_LANGUAGES, getPrimaryTranslationForLanguage } from '../../engine/translationCatalog';
-import { SpiritualTheme } from '../../constants/spiritualTheme';
+import { SpiritualTheme, isTeluguScript, getScriptureFontStyle, ScriptureTypography } from '../../constants/spiritualTheme';
 import { triggerLightHaptic, triggerMediumHaptic, triggerSuccessHaptic } from '../../services/mobileHaptics';
 import { shareScriptureVerse } from '../../services/mobileShare';
 import {
@@ -51,6 +52,7 @@ export default function BibleReaderScreen() {
     parallelMode,
     parallelTranslations,
     themeMode,
+    fontFamily,
     fontSize,
     lineSpacing,
     verseSpacing,
@@ -65,6 +67,7 @@ export default function BibleReaderScreen() {
     setParallelMode,
     toggleParallelTranslation,
     setThemeMode,
+    setFontFamily,
     setFontSize,
     setLineSpacing,
     setVerseSpacing,
@@ -305,6 +308,16 @@ export default function BibleReaderScreen() {
   };
 
   const currentTranslationInfo = getTranslationInfo(translation);
+  const isTeluguLanguage = currentTranslationInfo?.languageCode === 'te' || translation.toUpperCase().includes('TEL');
+
+  const getVerseFontStyle = (verseText?: string) => {
+    const isTelugu = isTeluguLanguage || isTeluguScript(verseText);
+    return getScriptureFontStyle(isTelugu, fontFamily);
+  };
+
+  const teluguHeaderFontStyle = isTeluguLanguage
+    ? { fontFamily: Platform.OS === 'android' ? 'Mandali-Bold' : 'Mandali', fontWeight: '700' as const }
+    : undefined;
 
   // Language & Version Picker Helper Calculations
   const filteredLanguages = SUPPORTED_LANGUAGES.filter((lang) => {
@@ -330,7 +343,7 @@ export default function BibleReaderScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.headerBookButton} onPress={() => setIsBookPickerOpen(true)}>
-          <Text style={[styles.headerBookTitle, { color: palette.textPrimary }]}>
+          <Text style={[styles.headerBookTitle, teluguHeaderFontStyle, { color: palette.textPrimary }]}>
             {getLocalizedBookName(currentBook.id, translation)} {currentChapter}
           </Text>
         </TouchableOpacity>
@@ -354,7 +367,7 @@ export default function BibleReaderScreen() {
       <ScrollView contentContainerStyle={styles.readerContent} showsVerticalScrollIndicator={false}>
         {/* Chapter Header Title */}
         <View style={styles.chapterHeaderContainer}>
-          <Text style={[styles.chapterHeaderTitle, { color: palette.textPrimary }]}>
+          <Text style={[styles.chapterHeaderTitle, teluguHeaderFontStyle, { color: palette.textPrimary }]}>
             {getLocalizedBookName(currentBook.id, translation)} {currentChapter}
           </Text>
 
@@ -395,6 +408,7 @@ export default function BibleReaderScreen() {
                       <Text
                         style={[
                           styles.verseText,
+                          getVerseFontStyle(pVerse ? pVerse.text : ''),
                           {
                             fontSize: getFontSizeStyle() * 0.95,
                             lineHeight: getLineHeightStyle() * 0.95,
@@ -465,6 +479,7 @@ export default function BibleReaderScreen() {
                   <Text
                     style={[
                       styles.verseText,
+                      getVerseFontStyle(v.text),
                       {
                         fontSize: getFontSizeStyle(),
                         lineHeight: getLineHeightStyle(),
@@ -790,7 +805,7 @@ export default function BibleReaderScreen() {
             <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
               {BIBLE_BOOKS.map((b) => (
                 <View key={b.id} style={[styles.bookRow, { borderBottomColor: palette.border }]}>
-                  <Text style={[styles.bookRowName, { color: palette.textPrimary }]}>
+                  <Text style={[styles.bookRowName, teluguHeaderFontStyle, { color: palette.textPrimary }]}>
                     {getLocalizedBookName(b.id, translation)}
                   </Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chapterGrid}>
@@ -906,6 +921,41 @@ export default function BibleReaderScreen() {
                 >
                   <Text style={[styles.settingPillText, lineSpacing === ls && styles.activeSettingPillText]}>
                     {ls.toUpperCase()}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={[styles.settingLabel, { color: palette.textSecondary, marginTop: 14 }]}>
+              Font Family (Mandali Telugu)
+            </Text>
+            <View style={styles.settingPillRow}>
+              {([
+                { id: 'auto', label: 'AUTO (TELUGU)' },
+                { id: 'mandali', label: 'MANDALI BOLD' },
+                { id: 'serif', label: 'SERIF' },
+                { id: 'sans', label: 'SANS' },
+              ] as const).map((item) => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={[
+                    styles.settingPill,
+                    fontFamily === item.id && styles.activeSettingPill,
+                    { borderColor: palette.border },
+                  ]}
+                  onPress={() => setFontFamily(item.id)}
+                >
+                  <Text
+                    style={[
+                      styles.settingPillText,
+                      fontFamily === item.id && styles.activeSettingPillText,
+                      item.id === 'mandali' && {
+                        fontFamily: Platform.OS === 'android' ? 'Mandali-Bold' : 'Mandali',
+                        fontWeight: '700',
+                      },
+                    ]}
+                  >
+                    {item.label}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -1051,7 +1101,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   verseText: {
-    fontWeight: '400',
+    letterSpacing: 0.1,
   },
   indicatorIcon: {
     marginLeft: 4,
