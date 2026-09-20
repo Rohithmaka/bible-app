@@ -753,10 +753,33 @@ export default function BibleReaderScreen() {
         </TouchableOpacity>
       </Modal>
 
-      {/* MODAL 2: BOOK & CHAPTER PICKER */}
+      {/* MODAL 2: BOOK & CHAPTER PICKER - CENTERED CARD MATCHING LANGUAGE MODAL */}
       <Modal visible={isBookPickerOpen} animationType="fade" transparent>
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsBookPickerOpen(false)}>
-          <View style={[styles.modalContent, { backgroundColor: palette.card, maxHeight: '80%' }]}>
+        <TouchableOpacity
+          style={[styles.modalOverlay, { justifyContent: 'center', alignItems: 'center', padding: 16 }]}
+          activeOpacity={1}
+          onPress={() => setIsBookPickerOpen(false)}
+        >
+          <View
+            style={[
+              styles.modalContent,
+              {
+                backgroundColor: palette.card,
+                maxWidth: 480,
+                width: '100%',
+                alignSelf: 'center',
+                maxHeight: '85%',
+                borderRadius: 24,
+                overflow: 'hidden',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 10 },
+                shadowOpacity: 0.25,
+                shadowRadius: 20,
+                elevation: 10,
+              },
+            ]}
+            onStartShouldSetResponder={() => true}
+          >
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: palette.textPrimary }]}>Select Book & Chapter</Text>
               <TouchableOpacity onPress={() => setIsBookPickerOpen(false)}>
@@ -764,7 +787,7 @@ export default function BibleReaderScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={{ flex: 1 }}>
+            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
               {BIBLE_BOOKS.map((b) => (
                 <View key={b.id} style={[styles.bookRow, { borderBottomColor: palette.border }]}>
                   <Text style={[styles.bookRowName, { color: palette.textPrimary }]}>
@@ -804,8 +827,30 @@ export default function BibleReaderScreen() {
 
       {/* MODAL 3: READING CONTROLS & TYPOGRAPHY SETTINGS */}
       <Modal visible={isSettingsOpen} animationType="slide" transparent>
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsSettingsOpen(false)}>
-          <View style={[styles.modalContent, { backgroundColor: palette.card }]}>
+        <TouchableOpacity
+          style={[styles.modalOverlay, { justifyContent: 'center', alignItems: 'center', padding: 16 }]}
+          activeOpacity={1}
+          onPress={() => setIsSettingsOpen(false)}
+        >
+          <View
+            style={[
+              styles.modalContent,
+              {
+                backgroundColor: palette.card,
+                maxWidth: 480,
+                width: '100%',
+                alignSelf: 'center',
+                borderRadius: 24,
+                overflow: 'hidden',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 10 },
+                shadowOpacity: 0.25,
+                shadowRadius: 20,
+                elevation: 10,
+              },
+            ]}
+            onStartShouldSetResponder={() => true}
+          >
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: palette.textPrimary }]}>Reading Preferences</Text>
               <TouchableOpacity onPress={() => setIsSettingsOpen(false)}>
@@ -871,8 +916,30 @@ export default function BibleReaderScreen() {
 
       {/* MODAL 4: STUDY NOTE INPUT */}
       <Modal visible={isNoteModalOpen} animationType="fade" transparent>
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsNoteModalOpen(false)}>
-          <View style={[styles.modalContent, { backgroundColor: palette.card }]}>
+        <TouchableOpacity
+          style={[styles.modalOverlay, { justifyContent: 'center', alignItems: 'center', padding: 16 }]}
+          activeOpacity={1}
+          onPress={() => setIsNoteModalOpen(false)}
+        >
+          <View
+            style={[
+              styles.modalContent,
+              {
+                backgroundColor: palette.card,
+                maxWidth: 480,
+                width: '100%',
+                alignSelf: 'center',
+                borderRadius: 24,
+                overflow: 'hidden',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 10 },
+                shadowOpacity: 0.25,
+                shadowRadius: 20,
+                elevation: 10,
+              },
+            ]}
+            onStartShouldSetResponder={() => true}
+          >
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: palette.textPrimary }]}>Add Study Note</Text>
               <TouchableOpacity onPress={() => setIsNoteModalOpen(false)}>
