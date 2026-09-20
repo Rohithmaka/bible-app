@@ -7,41 +7,62 @@ interface StorageInterface {
   clearAll: () => void;
 }
 
-let storage: StorageInterface;
+const memoryStore = new Map<string, string>();
 
-if (Platform.OS === 'web') {
-  storage = {
-    getString: (key: string) => {
-      if (typeof window === 'undefined') return undefined;
-      const val = window.localStorage.getItem(key);
-      return val === null ? undefined : val;
-    },
-    set: (key: string, value: string) => {
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(key, value);
+const inMemoryStorage: StorageInterface = {
+  getString: (key: string) => memoryStore.get(key),
+  set: (key: string, value: string) => { memoryStore.set(key, value); },
+  delete: (key: string) => { memoryStore.delete(key); },
+  clearAll: () => { memoryStore.clear(); }
+};
+
+function createStorage(): StorageInterface {
+  if (Platform.OS === 'web') {
+    return {
+      getString: (key: string) => {
+        if (typeof window === 'undefined') return memoryStore.get(key);
+        const val = window.localStorage.getItem(key);
+        return val === null ? undefined : val;
+      },
+      set: (key: string, value: string) => {
+        memoryStore.set(key, value);
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem(key, value);
+        }
+      },
+      delete: (key: string) => {
+        memoryStore.delete(key);
+        if (typeof window !== 'undefined') {
+          window.localStorage.removeItem(key);
+        }
+      },
+      clearAll: () => {
+        memoryStore.clear();
+        if (typeof window !== 'undefined') {
+          window.localStorage.clear();
+        }
       }
-    },
-    delete: (key: string) => {
-      if (typeof window !== 'undefined') {
-        window.localStorage.removeItem(key);
-      }
-    },
-    clearAll: () => {
-      if (typeof window !== 'undefined') {
-        window.localStorage.clear();
-      }
+    };
+  }
+
+  try {
+    const MMKVModule = require('react-native-mmkv');
+    const MMKVClass = MMKVModule?.MMKV || MMKVModule?.default || (typeof MMKVModule === 'function' ? MMKVModule : null);
+    if (typeof MMKVClass === 'function') {
+      const mmkv = new MMKVClass();
+      return {
+        getString: (key: string) => mmkv.getString(key),
+        set: (key: string, value: string) => mmkv.set(key, value),
+        delete: (key: string) => mmkv.delete(key),
+        clearAll: () => mmkv.clearAll()
+      };
     }
-  };
-} else {
-  // Use require here to prevent the bundler from initializing native JSI modules on web
-  const { MMKV } = require('react-native-mmkv');
-  const mmkv = new MMKV();
-  storage = {
-    getString: (key: string) => mmkv.getString(key),
-    set: (key: string, value: string) => mmkv.set(key, value),
-    delete: (key: string) => mmkv.delete(key),
-    clearAll: () => mmkv.clearAll()
-  };
+  } catch (e) {
+    console.warn('MMKV initialization fallback to in-memory store:', e);
+  }
+
+  return inMemoryStorage;
 }
 
-export { storage };
+export const storage = createStorage();
+
