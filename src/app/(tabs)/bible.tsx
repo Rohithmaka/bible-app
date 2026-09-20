@@ -112,7 +112,7 @@ export default function BibleReaderScreen() {
     } else {
       setSelectedLangCode('en');
     }
-    setPickerStep('language');
+    setPickerStep('version');
     setLangSearchQuery('');
     setIsTranslationMenuOpen(true);
   };
