@@ -6,7 +6,8 @@ import { useBibleStore } from '../../store/useBibleStore';
 import { useSpiritualStore } from '../../store/useSpiritualStore';
 import { SpiritualTheme } from '../../constants/spiritualTheme';
 import { triggerLightHaptic } from '../../services/mobileHaptics';
-import { User, BookOpen, Heart, Sparkles, Bookmark, Highlighter, Brain, Settings, Moon, Sun, Bell, ChevronRight, Edit2, X, Check, Compass, MapPin, Mail, ArrowRight } from 'lucide-react-native';
+import { sendInstantDailyVerseNotification } from '../../services/mobileNotifications';
+import { User, BookOpen, Heart, Sparkles, Bookmark, Highlighter, Brain, Settings, Moon, Sun, Bell, ChevronRight, Edit2, X, Check, Compass, MapPin, Mail, ArrowRight, Zap } from 'lucide-react-native';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -282,6 +283,37 @@ export default function ProfileScreen() {
               trackColor={{ false: palette.inputBg, true: palette.accentGreen }}
             />
           </View>
+
+          {user.notificationsEnabled ? (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={async () => {
+                triggerLightHaptic();
+                await sendInstantDailyVerseNotification(
+                  'Proverbs 3:5-6',
+                  'Trust in the LORD with all your heart, and do not lean on your own understanding.'
+                );
+              }}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingVertical: 8,
+                paddingHorizontal: 12,
+                backgroundColor: isDark ? 'rgba(5, 150, 105, 0.12)' : 'rgba(5, 150, 105, 0.08)',
+                borderRadius: 10,
+                marginBottom: 10,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Zap size={14} color={palette.accentGreen} />
+                <Text style={{ fontSize: 12, color: palette.accentGreen, fontWeight: '700' }}>
+                  Test Morning Verse Notification Now
+                </Text>
+              </View>
+              <ChevronRight size={14} color={palette.accentGreen} />
+            </TouchableOpacity>
+          ) : null}
 
           <View style={[styles.divider, { backgroundColor: palette.border }]} />
 

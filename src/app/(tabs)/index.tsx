@@ -32,13 +32,15 @@ export default function HomeScreen() {
     requestMobileNotificationPermissions().then((granted) => {
       if (granted) {
         scheduleDailySpiritualReminders({
-          morningTime: '07:00 AM',
+          morningTime: user.notificationTime || '07:00 AM',
           eveningTime: '09:00 PM',
+          verseReference: todayScripture?.reference,
+          verseSnippet: todayScripture?.verseText,
           enabled: user.notificationsEnabled,
         });
       }
     });
-  }, []);
+  }, [user.notificationsEnabled, user.notificationTime, todayScripture]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
