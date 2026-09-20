@@ -17,7 +17,7 @@ import { useSpiritualStore } from '../../store/useSpiritualStore';
 import { BIBLE_BOOKS, Verse } from '../../data/bibleData';
 import { getNextChapterLocation, getPrevChapterLocation, formatVerseShareText, getLocalizedBookName } from '../../engine/bibleEngine';
 import { fetchChapterVerses, fetchParallelChapterVerses, ParallelChapterResult } from '../../engine/multiBibleService';
-import { TRANSLATION_CATALOG, getTranslationInfo, SUPPORTED_LANGUAGES } from '../../engine/translationCatalog';
+import { TRANSLATION_CATALOG, getTranslationInfo, SUPPORTED_LANGUAGES, getPrimaryTranslationForLanguage } from '../../engine/translationCatalog';
 import { SpiritualTheme } from '../../constants/spiritualTheme';
 import { triggerLightHaptic, triggerMediumHaptic, triggerSuccessHaptic } from '../../services/mobileHaptics';
 import { shareScriptureVerse } from '../../services/mobileShare';
@@ -669,6 +669,14 @@ export default function BibleReaderScreen() {
                         onPress={() => {
                           triggerLightHaptic();
                           setSelectedLangCode(lang.code);
+                          const primaryId = getPrimaryTranslationForLanguage(lang.code);
+                          if (primaryId) {
+                            if (parallelMode) {
+                              toggleParallelTranslation(primaryId);
+                            } else {
+                              setTranslation(primaryId);
+                            }
+                          }
                           setPickerStep('version');
                         }}
                       >

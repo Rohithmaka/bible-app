@@ -41,87 +41,212 @@ const BOLLS_CODE_MAP: Record<string, string> = {
   // Spanish
   rvr: 'RV1960',
   rvr1909: 'RV1960',
+  rv1960: 'RV1960',
+  spa: 'RV1960',
+  spanish: 'RV1960',
+  es: 'RV1960',
+
   // French
-  lsg: 'LSG',
-  lsg1910: 'LSG',
+  lsg: 'FRLSG',
+  lsg1910: 'FRLSG',
+  frlsg: 'FRLSG',
+  fra: 'FRLSG',
+  french: 'FRLSG',
+  fr: 'FRLSG',
+
   // German
   lut: 'LUT',
   lut1912: 'LUT',
+  ger: 'LUT',
+  deu: 'LUT',
+  german: 'LUT',
+  de: 'LUT',
+
   // Portuguese
   arc: 'ARA',
   arc1969: 'ARA',
+  ara: 'ARA',
+  por: 'ARA',
+  portuguese: 'ARA',
+  pt: 'ARA',
+
   // Latin
   vulgate: 'VULG',
   vul: 'VULG',
+  lat: 'VULG',
+  la: 'VULG',
+
   // Chinese
-  cuvs: 'CUVS',
+  cuvs: 'CUNPS',
+  cuv: 'CUNPS',
+  cunps: 'CUNPS',
+  chi: 'CUNPS',
+  zho: 'CUNPS',
+  chinese: 'CUNPS',
+  zh: 'CUNPS',
+
   // Arabic
   svd: 'SVD',
+  ara_svd: 'SVD',
+  arabic: 'SVD',
+  ar: 'SVD',
+
   // Russian
   synod: 'SYNOD',
   syn: 'SYNOD',
+  rus: 'SYNOD',
+  russian: 'SYNOD',
+  ru: 'SYNOD',
+
+  // Ukrainian
+  ukr: 'UBIO',
+  ubio: 'UBIO',
+  ukrainian: 'UBIO',
+  uk: 'UBIO',
+
   // Swahili
   suv: 'SUV',
+  swa: 'SUV',
+  swahili: 'SUV',
+  sw: 'SUV',
+
   // Amharic
   amh: 'AMH',
+  amharic: 'AMH',
+  am: 'AMH',
+
   // Tagalog
   tag: 'TAG',
   tab: 'TAG',
+  tgl: 'TAG',
+  tagalog: 'TAG',
+  tl: 'TAG',
+
   // Vietnamese
   vie: 'VI1934',
   vie1934: 'VI1934',
+  vi1934: 'VI1934',
+  vietnamese: 'VI1934',
+  vi: 'VI1934',
+
   // Korean
   krv: 'KRV',
+  kor: 'KRV',
+  korean: 'KRV',
+  ko: 'KRV',
+
   // Japanese
   ja: 'JPKJV',
   jap1950: 'JPKJV',
+  jpkjv: 'JPKJV',
+  jpn: 'JPKJV',
+  japanese: 'JPKJV',
+
   // Italian
   ita: 'NR06',
+  nr06: 'NR06',
   riv1927: 'NR06',
+  italian: 'NR06',
+  it: 'NR06',
+
   // Dutch
-  dut: 'SV',
-  sv1637: 'SV',
+  dut: 'DSV',
+  dsv: 'DSV',
+  sv1637: 'DSV',
+  nld: 'DSV',
+  dutch: 'DSV',
+  nl: 'DSV',
+
   // Polish
   pol: 'BG',
+  bg: 'BG',
   bg1632: 'BG',
+  polish: 'BG',
+  pl: 'BG',
+
   // Indonesian
   ind: 'TB',
+  tb: 'TB',
   tl1958: 'TB',
+  indonesian: 'TB',
+  id: 'TB',
+
   // Romanian
   rum: 'VDCL',
+  vdcl: 'VDCL',
   cor1924: 'VDCL',
+  ron: 'VDCL',
+  romanian: 'VDCL',
+  ro: 'VDCL',
+
   // Swedish
   swe: 'SFB2015',
+  sfb2015: 'SFB2015',
   swe1917: 'SFB2015',
+  swedish: 'SFB2015',
+  sv: 'SFB2015',
+
   // Norwegian
   nor: 'DNB',
+  dnb: 'DNB',
   nor1930: 'DNB',
+  norwegian: 'DNB',
+  no: 'DNB',
+
+  // Finnish
+  fin: 'FIK38',
+  fik38: 'FIK38',
+  finnish: 'FIK38',
+  fi: 'FIK38',
+
+  // Hungarian
+  hun: 'KB',
+  kb: 'KB',
+  hungarian: 'KB',
+  hu: 'KB',
+
   // Hindi
   hiov: 'HIOV',
   hindi_irv: 'HIOV',
   hin_irv: 'HIOV',
   bsi_hin: 'HIOV',
   hin: 'HIOV',
+  hi: 'HIOV',
+
   // Malayalam
   mov: 'MOV',
   mal_irv: 'MOV',
   bsi_mal: 'MOV',
   mal: 'MOV',
+  ml: 'MOV',
+
   // Kannada
   kncl: 'KNCL',
   kan_irv: 'KNCL',
   bsi_kan: 'KNCL',
   kan: 'KNCL',
+  kn: 'KNCL',
+
   // Nepali
   nnrv: 'NNRV',
   nep_irv: 'NNRV',
   bsi_nep: 'NNRV',
   nep: 'NNRV',
+  ne: 'NNRV',
+
   // Tamil
   bsi_tam: 'TBSI',
   tam_irv: 'TBSI',
   irv_tam: 'TBSI',
   tam: 'TBSI',
+  ta: 'TBSI',
+
+  // Telugu
+  bsi_tel: 'TBSI',
+  tel_irv: 'TBSI',
+  tel_fbi: 'TBSI',
+  tel: 'TBSI',
+  te: 'TBSI',
 };
 
 /**

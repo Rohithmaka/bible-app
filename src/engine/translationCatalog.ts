@@ -1380,3 +1380,52 @@ export function getTranslationInfo(translationId: string): TranslationLicenseInf
 export function getTranslationsByLanguage(languageCode: string): TranslationLicenseInfo[] {
   return TRANSLATION_CATALOG.filter((t) => t.languageCode.toLowerCase() === languageCode.toLowerCase() && t.active && t.verifiedLicense);
 }
+
+/**
+ * Returns default primary translation ID for any given language code
+ */
+export function getPrimaryTranslationForLanguage(languageCode: string): string {
+  const norm = (languageCode || '').toLowerCase();
+  switch (norm) {
+    case 'te': return 'BSI_TEL';
+    case 'hi': return 'BSI_HIN';
+    case 'ta': return 'BSI_TAM';
+    case 'kn': return 'BSI_KAN';
+    case 'ml': return 'BSI_MAL';
+    case 'bn': return 'BSI_BEN';
+    case 'mr': return 'MAR_IRV';
+    case 'gu': return 'GUJ_IRV';
+    case 'pa': return 'PAN_IRV';
+    case 'or': return 'ORI_IRV';
+    case 'ur': return 'URD_IRV';
+    case 'ne': return 'NEP_IRV';
+    case 'as': return 'ASS_IRV';
+    case 'sat': return 'SAT_IRV';
+    case 'mai': return 'MAI_IRV';
+    case 'es': return 'RVR';
+    case 'fr': return 'LSG';
+    case 'de': return 'LUT';
+    case 'pt': return 'ARC1969';
+    case 'zh': return 'CUVS';
+    case 'ar': return 'SVD';
+    case 'ru': return 'SYNOD';
+    case 'sw': return 'SUV';
+    case 'am': return 'AMH';
+    case 'tl': return 'TAG';
+    case 'vi': return 'VIE1934';
+    case 'ko': return 'KRV';
+    case 'ja': return 'JAP1950';
+    case 'it': return 'ITA';
+    case 'nl': return 'DUT';
+    case 'pl': return 'POL';
+    case 'id': return 'IND';
+    case 'uk': return 'UKR';
+    case 'ro': return 'RUM';
+    case 'sv': return 'SWE';
+    case 'no': return 'NOR';
+    case 'fi': return 'FIN';
+    case 'hu': return 'HUN';
+    default: return 'KJV';
+  }
+}
+
