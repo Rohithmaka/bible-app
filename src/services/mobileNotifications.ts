@@ -5,6 +5,14 @@ export type ReminderType = 'bible' | 'morning' | 'afternoon' | 'evening' | 'nigh
 export interface NotificationScheduleConfig {
   enabled: boolean;
 
+  // Delivery & Alert Customizations
+  soundEnabled?: boolean;
+  vibrateEnabled?: boolean;
+  showVerseSnippet?: boolean;
+  userName?: string;
+  personalizedGreeting?: boolean;
+  activeDays?: 'everyday' | 'weekdays' | 'weekends';
+
   // 1. Daily Bible Reading
   bibleReadingEnabled?: boolean;
   bibleReadingTime?: string; // e.g. "07:00 AM"
@@ -66,6 +74,50 @@ export async function requestMobileNotificationPermissions(): Promise<boolean> {
   }
 }
 
+async function registerNotificationWithTrigger(
+  Notifications: any,
+  content: any,
+  timeObj: { hour: number; minute: number },
+  activeDays: 'everyday' | 'weekdays' | 'weekends' = 'everyday'
+) {
+  if (activeDays === 'everyday') {
+    await Notifications.scheduleNotificationAsync({
+      content,
+      trigger: {
+        hour: timeObj.hour,
+        minute: timeObj.minute,
+        repeats: true,
+      },
+    });
+  } else if (activeDays === 'weekdays') {
+    // 2 = Monday, 3 = Tuesday, 4 = Wednesday, 5 = Thursday, 6 = Friday
+    for (const weekday of [2, 3, 4, 5, 6]) {
+      await Notifications.scheduleNotificationAsync({
+        content,
+        trigger: {
+          weekday,
+          hour: timeObj.hour,
+          minute: timeObj.minute,
+          repeats: true,
+        },
+      });
+    }
+  } else if (activeDays === 'weekends') {
+    // 1 = Sunday, 7 = Saturday
+    for (const weekday of [1, 7]) {
+      await Notifications.scheduleNotificationAsync({
+        content,
+        trigger: {
+          weekday,
+          hour: timeObj.hour,
+          minute: timeObj.minute,
+          repeats: true,
+        },
+      });
+    }
+  }
+}
+
 export async function scheduleDailySpiritualReminders(config: NotificationScheduleConfig) {
   if (Platform.OS === 'web') return;
 
@@ -81,146 +133,197 @@ export async function scheduleDailySpiritualReminders(config: NotificationSchedu
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
         shouldShowAlert: true,
-        shouldPlaySound: true,
+        shouldPlaySound: config.soundEnabled !== false,
         shouldSetBadge: false,
       }),
     });
+
+    const isSound = config.soundEnabled !== false;
+    const isVibrate = config.vibrateEnabled !== false;
+    const activeDays = config.activeDays || 'everyday';
+    const userFirstName = config.userName ? config.userName.trim().split(' ')[0] : '';
+    const hasGreeting = !!userFirstName && config.personalizedGreeting !== false;
+    const showSnippet = config.showVerseSnippet !== false;
 
     // 1. Daily Bible Reading Reminder
     if (config.bibleReadingEnabled !== false) {
       const bibleTimeStr = config.bibleReadingTime || config.morningTime || '07:00 AM';
       const bibleTime = parseHourMinute(bibleTimeStr);
-      const bibleTitle = config.verseReference
-        ? `📖 Daily Bread: ${config.verseReference}`
-        : "📖 Time for Daily Bible Reading";
-      const bibleBody = config.verseSnippet
+      
+      const bibleTitle = hasGreeting
+        ? `📖 Good Morning ${userFirstName}! ${config.verseReference || 'Daily Bread'}`
+        : config.verseReference
+          ? `📖 Daily Bread: ${config.verseReference}`
+          : "📖 Time for Daily Bible Reading";
+
+      const bibleBody = showSnippet && config.verseSnippet
         ? `"${config.verseSnippet.slice(0, 100)}..." Tap to read and meditate.`
         : "Start your day in God's Word. Tap to open today's scripture.";
 
-      await Notifications.scheduleNotificationAsync({
-        content: {
+      await registerNotificationWithTrigger(
+        Notifications,
+        {
           title: bibleTitle,
           body: bibleBody,
-          sound: true,
+          sound: isSound,
+          vibrate: isVibrate ? [0, 250, 250, 250] : undefined,
           data: { screen: 'home', type: 'bible_reading' },
         },
-        trigger: {
-          hour: bibleTime.hour,
-          minute: bibleTime.minute,
-          repeats: true,
-        },
-      });
+        bibleTime,
+        activeDays
+      );
     }
 
     // 2. Morning Short Prayer Reminder
     if (config.morningPrayerEnabled !== false) {
       const morningPrayerTime = parseHourMinute(config.morningPrayerTime || '08:30 AM');
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: "☀️ Morning Prayer: Start with God 🙏",
+      const morningTitle = hasGreeting
+        ? `☀️ Morning Prayer, ${userFirstName} 🙏`
+        : "☀️ Morning Prayer: Start with God 🙏";
+
+      await registerNotificationWithTrigger(
+        Notifications,
+        {
+          title: morningTitle,
           body: "Take 2 minutes to thank the Lord, dedicate your steps, and invite His peace into your day.",
-          sound: true,
+          sound: isSound,
+          vibrate: isVibrate ? [0, 250, 250, 250] : undefined,
           data: { screen: 'prayer', type: 'morning_prayer' },
         },
-        trigger: {
-          hour: morningPrayerTime.hour,
-          minute: morningPrayerTime.minute,
-          repeats: true,
-        },
-      });
+        morningPrayerTime,
+        activeDays
+      );
     }
 
     // 3. Afternoon Midday Prayer Reminder
     if (config.afternoonPrayerEnabled !== false) {
       const afternoonPrayerTime = parseHourMinute(config.afternoonPrayerTime || '01:00 PM');
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: "🌤️ Midday Prayer Pause 🕊️",
+      const afternoonTitle = hasGreeting
+        ? `🌤️ Midday Prayer Pause, ${userFirstName} 🕊️`
+        : "🌤️ Midday Prayer Pause 🕊️";
+
+      await registerNotificationWithTrigger(
+        Notifications,
+        {
+          title: afternoonTitle,
           body: "Take a 60-second breath. Cast your midday stress on God and renew your strength in Him.",
-          sound: true,
+          sound: isSound,
+          vibrate: isVibrate ? [0, 250, 250, 250] : undefined,
           data: { screen: 'prayer', type: 'afternoon_prayer' },
         },
-        trigger: {
-          hour: afternoonPrayerTime.hour,
-          minute: afternoonPrayerTime.minute,
-          repeats: true,
-        },
-      });
+        afternoonPrayerTime,
+        activeDays
+      );
     }
 
     // 4. Evening Short Prayer & Gratitude Reminder
     if (config.eveningPrayerEnabled !== false) {
       const eveningPrayerTime = parseHourMinute(config.eveningPrayerTime || '07:00 PM');
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: "🌅 Evening Prayer & Gratitude 🙏",
+      const eveningTitle = hasGreeting
+        ? `🌅 Evening Prayer & Gratitude, ${userFirstName} 🙏`
+        : "🌅 Evening Prayer & Gratitude 🙏";
+
+      await registerNotificationWithTrigger(
+        Notifications,
+        {
+          title: eveningTitle,
           body: "Pause your evening to thank God for carrying you through today and covering your family with grace.",
-          sound: true,
+          sound: isSound,
+          vibrate: isVibrate ? [0, 250, 250, 250] : undefined,
           data: { screen: 'prayer', type: 'evening_prayer' },
         },
-        trigger: {
-          hour: eveningPrayerTime.hour,
-          minute: eveningPrayerTime.minute,
-          repeats: true,
-        },
-      });
+        eveningPrayerTime,
+        activeDays
+      );
     }
 
     // 5. Night Prayer & Sleep Peace Reminder
     if (config.nightPrayerEnabled !== false) {
       const nightPrayerTime = parseHourMinute(config.nightPrayerTime || config.eveningTime || '09:30 PM');
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: "🌙 Night Prayer & Restful Sleep 🕊️",
+      const nightTitle = hasGreeting
+        ? `🌙 Peaceful Sleep, ${userFirstName} 🕊️`
+        : "🌙 Night Prayer & Restful Sleep 🕊️";
+
+      await registerNotificationWithTrigger(
+        Notifications,
+        {
+          title: nightTitle,
           body: "Rest safely in God's arms tonight. 'He grants sleep to those He loves' (Psalm 127:2). Sleep in peace.",
-          sound: true,
+          sound: isSound,
+          vibrate: isVibrate ? [0, 250, 250, 250] : undefined,
           data: { screen: 'prayer', type: 'night_prayer' },
         },
-        trigger: {
-          hour: nightPrayerTime.hour,
-          minute: nightPrayerTime.minute,
-          repeats: true,
-        },
-      });
+        nightPrayerTime,
+        activeDays
+      );
     }
   } catch (e) {
     console.warn('Schedule notifications error:', e);
   }
 }
 
+export interface InstantReminderCustomization {
+  verseRef?: string;
+  verseSnippet?: string;
+  soundEnabled?: boolean;
+  vibrateEnabled?: boolean;
+  userName?: string;
+  personalizedGreeting?: boolean;
+  showVerseSnippet?: boolean;
+}
+
 /**
- * Sends an immediate test notification for any of the 5 spiritual reminders so the user can verify it right now.
+ * Sends an immediate test notification with user customization options applied.
  */
 export async function sendInstantPrayerReminder(
   type: ReminderType,
-  verseRef: string = 'Proverbs 3:5-6',
-  verseSnippet: string = 'Trust in the LORD with all your heart, and do not lean on your own understanding.'
+  options?: InstantReminderCustomization
 ) {
   if (Platform.OS === 'web') return;
   try {
     const Notifications = require('expo-notifications');
+    const verseRef = options?.verseRef || 'Proverbs 3:5-6';
+    const verseSnippet = options?.verseSnippet || 'Trust in the LORD with all your heart, and do not lean on your own understanding.';
+    const isSound = options?.soundEnabled !== false;
+    const isVibrate = options?.vibrateEnabled !== false;
+    const userFirstName = options?.userName ? options?.userName.trim().split(' ')[0] : '';
+    const hasGreeting = !!userFirstName && options?.personalizedGreeting !== false;
+    const showSnippet = options?.showVerseSnippet !== false;
+
     let title = '';
     let body = '';
 
     switch (type) {
       case 'bible':
-        title = `📖 Daily Bread: ${verseRef}`;
-        body = `"${verseSnippet.slice(0, 100)}..." Tap to read full chapter.`;
+        title = hasGreeting
+          ? `📖 Good Morning ${userFirstName}! ${verseRef}`
+          : `📖 Daily Bread: ${verseRef}`;
+        body = showSnippet
+          ? `"${verseSnippet.slice(0, 100)}..." Tap to read full chapter.`
+          : "Start your day in God's Word. Tap to open today's scripture.";
         break;
       case 'morning':
-        title = "☀️ Morning Prayer: Start with God 🙏";
+        title = hasGreeting
+          ? `☀️ Morning Prayer, ${userFirstName} 🙏`
+          : "☀️ Morning Prayer: Start with God 🙏";
         body = "Take 2 minutes to thank the Lord, dedicate your steps, and invite His peace into your morning.";
         break;
       case 'afternoon':
-        title = "🌤️ Midday Prayer Pause 🕊️";
+        title = hasGreeting
+          ? `🌤️ Midday Prayer Pause, ${userFirstName} 🕊️`
+          : "🌤️ Midday Prayer Pause 🕊️";
         body = "Take a 60-second breath. Cast your midday stress on God and renew your strength in Him.";
         break;
       case 'evening':
-        title = "🌅 Evening Prayer & Gratitude 🙏";
+        title = hasGreeting
+          ? `🌅 Evening Prayer & Gratitude, ${userFirstName} 🙏`
+          : "🌅 Evening Prayer & Gratitude 🙏";
         body = "Pause your evening to thank God for carrying you through today and covering your family with grace.";
         break;
       case 'night':
-        title = "🌙 Night Prayer & Restful Sleep 🕊️";
+        title = hasGreeting
+          ? `🌙 Peaceful Sleep, ${userFirstName} 🕊️`
+          : "🌙 Night Prayer & Restful Sleep 🕊️";
         body = "Rest safely in God's arms tonight. 'He grants sleep to those He loves' (Psalm 127:2). Sleep in peace.";
         break;
     }
@@ -229,7 +332,8 @@ export async function sendInstantPrayerReminder(
       content: {
         title,
         body,
-        sound: true,
+        sound: isSound,
+        vibrate: isVibrate ? [0, 250, 250, 250] : undefined,
       },
       trigger: null, // Send immediately
     });
@@ -245,5 +349,8 @@ export async function sendInstantDailyVerseNotification(
   reference: string = 'Proverbs 3:5-6',
   verseText: string = 'Trust in the LORD with all your heart...'
 ) {
-  return sendInstantPrayerReminder('bible', reference, verseText);
+  return sendInstantPrayerReminder('bible', {
+    verseRef: reference,
+    verseSnippet: verseText,
+  });
 }

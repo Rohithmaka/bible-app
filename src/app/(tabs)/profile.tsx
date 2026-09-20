@@ -7,7 +7,7 @@ import { useSpiritualStore } from '../../store/useSpiritualStore';
 import { SpiritualTheme } from '../../constants/spiritualTheme';
 import { triggerLightHaptic } from '../../services/mobileHaptics';
 import { sendInstantPrayerReminder, ReminderType } from '../../services/mobileNotifications';
-import { User, BookOpen, Heart, Sparkles, Bookmark, Highlighter, Brain, Settings, Moon, Sun, Bell, ChevronRight, Edit2, X, Check, Compass, MapPin, Mail, ArrowRight, Zap, Clock } from 'lucide-react-native';
+import { User, BookOpen, Heart, Sparkles, Bookmark, Highlighter, Brain, Settings, Moon, Sun, Bell, ChevronRight, Edit2, X, Check, Compass, MapPin, Mail, ArrowRight, Zap, Clock, Volume2, Smartphone, Calendar } from 'lucide-react-native';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -17,7 +17,12 @@ export default function ProfileScreen() {
   const [isNameModalOpen, setIsNameModalOpen] = useState(false);
   const [editedName, setEditedName] = useState(user.displayName);
   const [editingReminderType, setEditingReminderType] = useState<ReminderType | null>(null);
+  const [isCustomizationModalOpen, setIsCustomizationModalOpen] = useState(false);
   const [testNotificationFeedback, setTestNotificationFeedback] = useState<string | null>(null);
+
+  const [customHour, setCustomHour] = useState('07');
+  const [customMinute, setCustomMinute] = useState('00');
+  const [customMeridian, setCustomMeridian] = useState<'AM' | 'PM'>('AM');
 
   const REMINDER_PRESETS: Record<ReminderType, { label: string; field: keyof typeof user; times: string[] }> = {
     bible: {
@@ -109,9 +114,28 @@ export default function ProfileScreen() {
     },
   ];
 
+  const openTimeEditor = (type: ReminderType) => {
+    const currentVal = user[REMINDER_PRESETS[type].field] || (type === 'bible' ? '07:00 AM' : type === 'morning' ? '08:30 AM' : type === 'afternoon' ? '01:00 PM' : type === 'evening' ? '07:00 PM' : '09:30 PM');
+    const parts = (currentVal as string).trim().split(' ');
+    const timeParts = (parts[0] || '07:00').split(':');
+    setCustomHour(timeParts[0] || '07');
+    setCustomMinute(timeParts[1] || '00');
+    setCustomMeridian((parts[1] || 'AM').toUpperCase() === 'PM' ? 'PM' : 'AM');
+    setEditingReminderType(type);
+    triggerLightHaptic();
+  };
+
   const handleTriggerTest = async (type: ReminderType) => {
     triggerLightHaptic();
-    await sendInstantPrayerReminder(type, todayScripture?.reference, todayScripture?.verseText);
+    await sendInstantPrayerReminder(type, {
+      verseRef: todayScripture?.reference,
+      verseSnippet: todayScripture?.verseText,
+      soundEnabled: user.notificationSoundEnabled !== false,
+      vibrateEnabled: user.notificationVibrateEnabled !== false,
+      userName: user.displayName,
+      personalizedGreeting: user.notificationPersonalizedGreeting !== false,
+      showVerseSnippet: user.notificationShowVerseSnippet !== false,
+    });
     const labelMap: Record<ReminderType, string> = {
       bible: 'Daily Bible Reading',
       morning: 'Morning Prayer',
@@ -425,10 +449,7 @@ export default function ProfileScreen() {
                           <Text style={{ fontSize: 13, fontWeight: '700', color: palette.textPrimary }}>{item.title}</Text>
                           <TouchableOpacity
                             activeOpacity={0.7}
-                            onPress={() => {
-                              triggerLightHaptic();
-                              setEditingReminderType(item.type);
-                            }}
+                            onPress={() => openTimeEditor(item.type)}
                             style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}
                           >
                             <Text style={{ fontSize: 12, fontWeight: '600', color: palette.accentGreen }}>
@@ -467,6 +488,40 @@ export default function ProfileScreen() {
                   </View>
                 );
               })}
+
+              {/* Customization Options Trigger Button */}
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => {
+                  triggerLightHaptic();
+                  setIsCustomizationModalOpen(true);
+                }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingVertical: 10,
+                  paddingHorizontal: 12,
+                  backgroundColor: isDark ? 'rgba(5, 150, 105, 0.12)' : 'rgba(5, 150, 105, 0.08)',
+                  borderRadius: 10,
+                  marginTop: 10,
+                  borderWidth: 1,
+                  borderColor: isDark ? 'rgba(5, 150, 105, 0.25)' : 'rgba(5, 150, 105, 0.15)',
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, paddingRight: 6 }}>
+                  <Settings size={15} color={palette.accentGreen} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: palette.accentGreen }}>
+                      Alert & Delivery Customization
+                    </Text>
+                    <Text style={{ fontSize: 11, color: palette.textMuted }}>
+                      Sound ({user.notificationSoundEnabled !== false ? 'On' : 'Off'}) • Vibrate ({user.notificationVibrateEnabled !== false ? 'On' : 'Off'}) • {user.notificationActiveDays === 'weekdays' ? 'Weekdays' : user.notificationActiveDays === 'weekends' ? 'Weekends' : 'Everyday'}
+                    </Text>
+                  </View>
+                </View>
+                <ChevronRight size={15} color={palette.accentGreen} />
+              </TouchableOpacity>
 
               {/* Instant Test Strip */}
               <View style={{ marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderColor: palette.border }}>
@@ -645,7 +700,7 @@ export default function ProfileScreen() {
                   Choose when you would like your phone to alert you:
                 </Text>
 
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
                   {REMINDER_PRESETS[editingReminderType].times.map((timeStr) => {
                     const field = REMINDER_PRESETS[editingReminderType!].field;
                     const defaultTime = editingReminderType === 'bible' ? '07:00 AM' : editingReminderType === 'morning' ? '08:30 AM' : editingReminderType === 'afternoon' ? '01:00 PM' : editingReminderType === 'evening' ? '07:00 PM' : '09:30 PM';
@@ -688,6 +743,108 @@ export default function ProfileScreen() {
                   })}
                 </View>
 
+                {/* EXACT CUSTOM TIME INPUT */}
+                <View style={{ paddingTop: 14, borderTopWidth: 1, borderColor: palette.border, marginBottom: 16 }}>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: palette.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    Or Set Exact Custom Time:
+                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                    <TextInput
+                      style={{
+                        backgroundColor: palette.inputBg,
+                        color: palette.textPrimary,
+                        borderRadius: 10,
+                        paddingHorizontal: 12,
+                        paddingVertical: 8,
+                        fontSize: 16,
+                        fontWeight: '700',
+                        width: 54,
+                        textAlign: 'center',
+                        borderWidth: 1,
+                        borderColor: palette.border,
+                      }}
+                      value={customHour}
+                      onChangeText={(val) => setCustomHour(val.replace(/[^0-9]/g, '').slice(0, 2))}
+                      keyboardType="number-pad"
+                      maxLength={2}
+                      placeholder="07"
+                      placeholderTextColor={palette.textMuted}
+                    />
+                    <Text style={{ fontSize: 18, fontWeight: '700', color: palette.textPrimary }}>:</Text>
+                    <TextInput
+                      style={{
+                        backgroundColor: palette.inputBg,
+                        color: palette.textPrimary,
+                        borderRadius: 10,
+                        paddingHorizontal: 12,
+                        paddingVertical: 8,
+                        fontSize: 16,
+                        fontWeight: '700',
+                        width: 54,
+                        textAlign: 'center',
+                        borderWidth: 1,
+                        borderColor: palette.border,
+                      }}
+                      value={customMinute}
+                      onChangeText={(val) => setCustomMinute(val.replace(/[^0-9]/g, '').slice(0, 2))}
+                      keyboardType="number-pad"
+                      maxLength={2}
+                      placeholder="00"
+                      placeholderTextColor={palette.textMuted}
+                    />
+                    <View style={{ flexDirection: 'row', borderRadius: 10, borderWidth: 1, borderColor: palette.border, overflow: 'hidden' }}>
+                      <TouchableOpacity
+                        onPress={() => { triggerLightHaptic(); setCustomMeridian('AM'); }}
+                        style={{
+                          paddingVertical: 8,
+                          paddingHorizontal: 12,
+                          backgroundColor: customMeridian === 'AM' ? palette.accentGreen : palette.inputBg,
+                        }}
+                      >
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: customMeridian === 'AM' ? '#FFFFFF' : palette.textSecondary }}>AM</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => { triggerLightHaptic(); setCustomMeridian('PM'); }}
+                        style={{
+                          paddingVertical: 8,
+                          paddingHorizontal: 12,
+                          backgroundColor: customMeridian === 'PM' ? palette.accentGreen : palette.inputBg,
+                        }}
+                      >
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: customMeridian === 'PM' ? '#FFFFFF' : palette.textSecondary }}>PM</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      let h = parseInt(customHour || '7', 10);
+                      let m = parseInt(customMinute || '0', 10);
+                      if (isNaN(h) || h < 1 || h > 12) h = 7;
+                      if (isNaN(m) || m < 0 || m > 59) m = 0;
+                      const formattedTime = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')} ${customMeridian}`;
+                      const field = REMINDER_PRESETS[editingReminderType!].field;
+                      updateUserProfile({ [field]: formattedTime });
+                      if (editingReminderType === 'bible') {
+                        updateUserProfile({ notificationTime: formattedTime });
+                      }
+                      triggerLightHaptic();
+                      setEditingReminderType(null);
+                    }}
+                    style={{
+                      backgroundColor: palette.accentGreen,
+                      paddingVertical: 10,
+                      borderRadius: 10,
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#FFFFFF' }}>
+                      Apply Custom Time
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
                 <TouchableOpacity
                   onPress={() => setEditingReminderType(null)}
                   style={{ width: '100%', paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: palette.border, alignItems: 'center' }}
@@ -696,6 +853,200 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
               </>
             )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* NOTIFICATION CUSTOMIZATION & ALERT SETTINGS MODAL */}
+      <Modal visible={isCustomizationModalOpen} animationType="fade" transparent>
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 20 }}
+          activeOpacity={1}
+          onPress={() => setIsCustomizationModalOpen(false)}
+        >
+          <View
+            style={{
+              backgroundColor: palette.card,
+              borderRadius: 20,
+              padding: 24,
+              width: '100%',
+              maxWidth: 420,
+              borderWidth: 1,
+              borderColor: palette.cardBorder,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 10 },
+              shadowOpacity: 0.3,
+              shadowRadius: 15,
+              elevation: 8,
+            }}
+            onStartShouldSetResponder={() => true}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Settings size={20} color={palette.accentGreen} />
+                <Text style={{ fontSize: 17, fontWeight: '700', color: palette.textPrimary }}>Notification Customization</Text>
+              </View>
+              <TouchableOpacity onPress={() => setIsCustomizationModalOpen(false)}>
+                <X size={20} color={palette.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontSize: 13, color: palette.textSecondary, marginBottom: 16 }}>
+              Customize how daily scripture and prayer alerts are delivered to your device:
+            </Text>
+
+            {/* 1. Sound & Vibration */}
+            <View style={{ backgroundColor: palette.inputBg, borderRadius: 14, padding: 12, marginBottom: 14, borderWidth: 1, borderColor: palette.border }}>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: palette.textSecondary, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>
+                Alert Tone & Haptics
+              </Text>
+
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, paddingRight: 8 }}>
+                  <Volume2 size={16} color={palette.accentGreen} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: palette.textPrimary }}>Play Sound</Text>
+                    <Text style={{ fontSize: 11, color: palette.textMuted }}>Chime on notification arrival</Text>
+                  </View>
+                </View>
+                <Switch
+                  value={user.notificationSoundEnabled !== false}
+                  onValueChange={(val) => {
+                    triggerLightHaptic();
+                    updateUserProfile({ notificationSoundEnabled: val });
+                  }}
+                  trackColor={{ false: palette.border, true: palette.accentGreen }}
+                />
+              </View>
+
+              <View style={[styles.divider, { backgroundColor: palette.border, marginVertical: 6 }]} />
+
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, paddingRight: 8 }}>
+                  <Smartphone size={16} color={palette.accentGold} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: palette.textPrimary }}>Vibration</Text>
+                    <Text style={{ fontSize: 11, color: palette.textMuted }}>Haptic buzz on reminder</Text>
+                  </View>
+                </View>
+                <Switch
+                  value={user.notificationVibrateEnabled !== false}
+                  onValueChange={(val) => {
+                    triggerLightHaptic();
+                    updateUserProfile({ notificationVibrateEnabled: val });
+                  }}
+                  trackColor={{ false: palette.border, true: palette.accentGreen }}
+                />
+              </View>
+            </View>
+
+            {/* 2. Message Content & Privacy */}
+            <View style={{ backgroundColor: palette.inputBg, borderRadius: 14, padding: 12, marginBottom: 14, borderWidth: 1, borderColor: palette.border }}>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: palette.textSecondary, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>
+                Message & Privacy
+              </Text>
+
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, paddingRight: 8 }}>
+                  <BookOpen size={16} color="#3B82F6" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: palette.textPrimary }}>Show Verse Text</Text>
+                    <Text style={{ fontSize: 11, color: palette.textMuted }}>Display scripture on lockscreen</Text>
+                  </View>
+                </View>
+                <Switch
+                  value={user.notificationShowVerseSnippet !== false}
+                  onValueChange={(val) => {
+                    triggerLightHaptic();
+                    updateUserProfile({ notificationShowVerseSnippet: val });
+                  }}
+                  trackColor={{ false: palette.border, true: palette.accentGreen }}
+                />
+              </View>
+
+              <View style={[styles.divider, { backgroundColor: palette.border, marginVertical: 6 }]} />
+
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, paddingRight: 8 }}>
+                  <User size={16} color="#8B5CF6" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: palette.textPrimary }}>Personal Greeting</Text>
+                    <Text style={{ fontSize: 11, color: palette.textMuted }}>Include your name in alerts</Text>
+                  </View>
+                </View>
+                <Switch
+                  value={user.notificationPersonalizedGreeting !== false}
+                  onValueChange={(val) => {
+                    triggerLightHaptic();
+                    updateUserProfile({ notificationPersonalizedGreeting: val });
+                  }}
+                  trackColor={{ false: palette.border, true: palette.accentGreen }}
+                />
+              </View>
+            </View>
+
+            {/* 3. Active Days Frequency */}
+            <View style={{ backgroundColor: palette.inputBg, borderRadius: 14, padding: 12, marginBottom: 18, borderWidth: 1, borderColor: palette.border }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                <Calendar size={15} color={palette.accentGreen} />
+                <Text style={{ fontSize: 11, fontWeight: '700', color: palette.textSecondary, textTransform: 'uppercase', letterSpacing: 0.8 }}>
+                  Active Days
+                </Text>
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                {[
+                  { key: 'everyday', label: 'Everyday' },
+                  { key: 'weekdays', label: 'Weekdays' },
+                  { key: 'weekends', label: 'Weekends' },
+                ].map((item) => {
+                  const isSelected = (user.notificationActiveDays || 'everyday') === item.key;
+                  return (
+                    <TouchableOpacity
+                      key={item.key}
+                      activeOpacity={0.8}
+                      onPress={() => {
+                        triggerLightHaptic();
+                        updateUserProfile({ notificationActiveDays: item.key as any });
+                      }}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 8,
+                        borderRadius: 10,
+                        backgroundColor: isSelected ? palette.accentGreen : palette.card,
+                        borderWidth: 1,
+                        borderColor: isSelected ? palette.accentGreen : palette.border,
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: isSelected ? '#FFFFFF' : palette.textPrimary }}>
+                        {item.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => {
+                triggerLightHaptic();
+                setIsCustomizationModalOpen(false);
+              }}
+              style={{
+                backgroundColor: palette.accentGreen,
+                paddingVertical: 12,
+                borderRadius: 12,
+                flexDirection: 'row',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <Check size={18} color="#FFFFFF" />
+              <Text style={{ fontSize: 15, fontWeight: '700', color: '#FFFFFF' }}>Save & Apply Preferences</Text>
+            </TouchableOpacity>
           </View>
         </TouchableOpacity>
       </Modal>

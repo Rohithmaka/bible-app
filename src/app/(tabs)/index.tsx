@@ -33,6 +33,13 @@ export default function HomeScreen() {
       if (granted) {
         scheduleDailySpiritualReminders({
           enabled: user.notificationsEnabled,
+          soundEnabled: user.notificationSoundEnabled !== false,
+          vibrateEnabled: user.notificationVibrateEnabled !== false,
+          showVerseSnippet: user.notificationShowVerseSnippet !== false,
+          userName: user.displayName,
+          personalizedGreeting: user.notificationPersonalizedGreeting !== false,
+          activeDays: user.notificationActiveDays || 'everyday',
+
           bibleReadingEnabled: user.bibleReadingEnabled !== false,
           bibleReadingTime: user.bibleReadingTime || user.notificationTime || '07:00 AM',
           verseReference: todayScripture?.reference,
@@ -54,6 +61,12 @@ export default function HomeScreen() {
     });
   }, [
     user.notificationsEnabled,
+    user.notificationSoundEnabled,
+    user.notificationVibrateEnabled,
+    user.notificationShowVerseSnippet,
+    user.notificationPersonalizedGreeting,
+    user.notificationActiveDays,
+    user.displayName,
     user.bibleReadingEnabled,
     user.bibleReadingTime,
     user.morningPrayerEnabled,

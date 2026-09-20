@@ -241,6 +241,13 @@ export interface SpiritualUserState {
   afternoonPrayerEnabled?: boolean;
   eveningPrayerEnabled?: boolean;
   nightPrayerEnabled?: boolean;
+
+  // Notification Delivery & Alert Customization
+  notificationSoundEnabled?: boolean;
+  notificationVibrateEnabled?: boolean;
+  notificationShowVerseSnippet?: boolean;
+  notificationPersonalizedGreeting?: boolean;
+  notificationActiveDays?: 'everyday' | 'weekdays' | 'weekends';
 }
 
 export interface SpiritualState {
@@ -464,6 +471,11 @@ export const useSpiritualStore = create<SpiritualState>()(
         afternoonPrayerEnabled: true,
         eveningPrayerEnabled: true,
         nightPrayerEnabled: true,
+        notificationSoundEnabled: true,
+        notificationVibrateEnabled: true,
+        notificationShowVerseSnippet: true,
+        notificationPersonalizedGreeting: true,
+        notificationActiveDays: 'everyday',
       },
       todayScripture: INITIAL_DAILY_SCRIPTURE,
       morningCompletedDates: [],
