@@ -278,6 +278,7 @@ export interface SpiritualState {
   // Prayer Circles
   createPrayerCircle: (name: string, category: 'family' | 'church' | 'friends' | 'small-group' | 'other', description: string, isPrivate: boolean) => PrayerCircle;
   joinCircleByCode: (code: string) => boolean;
+  addRemoteCircle: (circle: PrayerCircle) => void;
 
   // Moderation
   reportPrayerRequest: (prayerId: string, reason: string) => void;
@@ -717,6 +718,20 @@ export const useSpiritualStore = create<SpiritualState>()(
           return true;
         }
         return false;
+      },
+
+      addRemoteCircle: (circle: PrayerCircle) => {
+        set(state => {
+          const exists = state.prayerCircles.some(c => c.id === circle.id || c.inviteCode === circle.inviteCode);
+          if (exists) {
+            return {
+              prayerCircles: state.prayerCircles.map(c => c.id === circle.id ? { ...c, memberCount: Math.max(c.memberCount, circle.memberCount + 1) } : c)
+            };
+          }
+          return {
+            prayerCircles: [{ ...circle, memberCount: circle.memberCount + 1 }, ...state.prayerCircles]
+          };
+        });
       },
 
       // Moderation

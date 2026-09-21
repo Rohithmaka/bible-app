@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import { useBibleStore } from '../store/useBibleStore';
 import { initNotificationChannels, setupNotificationListeners } from '../services/reminderNotificationService';
+import { initializeUserSession } from '../services/authService';
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,10 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
+    // 1. Initialize anonymous / cloud auth session
+    initializeUserSession();
+
+    // 2. Initialize notification channels & deep link listeners
     initNotificationChannels();
     const unsubscribe = setupNotificationListeners((route) => {
       try {

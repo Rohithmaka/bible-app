@@ -80,6 +80,7 @@ export async function publishCommunityPrayerToSupabase(prayer: {
           standing_count: 0,
           support_count: 0,
           is_answered: false,
+          is_reported: false,
         },
       ])
       .select()
@@ -102,10 +103,8 @@ export async function publishCommunityPrayerToSupabase(prayer: {
 export async function incrementSupabaseIPrayedCount(prayerId: string) {
   if (!isSupabaseConfigured()) return;
   try {
-    // Attempt RPC increment
     const { error } = await supabase.rpc('increment_prayer_count', { row_id: prayerId });
     if (error) {
-      // Fallback: fetch current count and update
       const { data } = await supabase.from('community_prayers').select('prayer_count').eq('id', prayerId).single();
       if (data) {
         await supabase
@@ -116,6 +115,27 @@ export async function incrementSupabaseIPrayedCount(prayerId: string) {
     }
   } catch (e) {
     console.warn('Failed to update Supabase prayer count:', e);
+  }
+}
+
+/**
+ * Atomically increments the standing_count in Supabase.
+ */
+export async function incrementSupabaseStandingCount(prayerId: string) {
+  if (!isSupabaseConfigured()) return;
+  try {
+    const { error } = await supabase.rpc('increment_standing_count', { row_id: prayerId });
+    if (error) {
+      const { data } = await supabase.from('community_prayers').select('standing_count').eq('id', prayerId).single();
+      if (data) {
+        await supabase
+          .from('community_prayers')
+          .update({ standing_count: (data.standing_count || 0) + 1 })
+          .eq('id', prayerId);
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to update Supabase standing count:', e);
   }
 }
 
@@ -151,7 +171,136 @@ export async function createCircleInSupabase(circle: Omit<PrayerCircle, 'id'>) {
   }
 }
 
-// Mapper Helper
+/**
+ * Queries Supabase for a prayer circle by its unique invite code.
+ * Enables users on different phones to join circles created by friends.
+ */
+export async function findCircleByInviteCode(inviteCode: string): Promise<PrayerCircle | null> {
+  if (!isSupabaseConfigured() || !inviteCode) return null;
+  try {
+    // 1. Try RPC lookup
+    const { data: rpcData, error: rpcError } = await supabase.rpc('find_prayer_circle_by_code', {
+      code_str: inviteCode.trim().toUpperCase(),
+    });
+
+    if (!rpcError && rpcData && rpcData.length > 0) {
+      const row = rpcData[0];
+      return mapSupabaseToPrayerCircle(row);
+    }
+
+    // 2. Direct query fallback
+    const { data, error } = await supabase
+      .from('prayer_circles')
+      .select('*')
+      .ilike('invite_code', inviteCode.trim())
+      .single();
+
+    if (!error && data) {
+      return mapSupabaseToPrayerCircle(data);
+    }
+    return null;
+  } catch (e) {
+    console.warn('Failed to query circle by code in Supabase:', e);
+    return null;
+  }
+}
+
+/**
+ * Increments the member count of a prayer circle when a user joins.
+ */
+export async function incrementCircleMemberCount(circleId: string): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  try {
+    const { error } = await supabase.rpc('increment_circle_member_count', { circle_id: circleId });
+    if (error) {
+      const { data } = await supabase.from('prayer_circles').select('member_count').eq('id', circleId).single();
+      if (data) {
+        await supabase
+          .from('prayer_circles')
+          .update({ member_count: (data.member_count || 1) + 1 })
+          .eq('id', circleId);
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to increment circle member count:', e);
+  }
+}
+
+/**
+ * Reports a prayer burden for community moderation.
+ */
+export async function reportPrayerToSupabase(prayerId: string, reason: string): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const { error } = await supabase.rpc('report_prayer_burden', {
+      prayer_id: prayerId,
+      reason_str: reason,
+    });
+    if (error) {
+      await supabase
+        .from('community_prayers')
+        .update({ is_reported: true, report_reason: reason })
+        .eq('id', prayerId);
+    }
+    return true;
+  } catch (e) {
+    console.warn('Failed to report prayer to Supabase:', e);
+    return false;
+  }
+}
+
+/**
+ * Fetches reported prayers for admin review.
+ */
+export async function fetchReportedPrayersFromSupabase(): Promise<CommunityPrayer[]> {
+  if (!isSupabaseConfigured()) return [];
+  try {
+    const { data, error } = await supabase
+      .from('community_prayers')
+      .select('*')
+      .eq('is_reported', true)
+      .order('updated_at', { ascending: false });
+
+    if (!error && data) {
+      return data.map(mapSupabaseToCommunityPrayer);
+    }
+    return [];
+  } catch (e) {
+    console.warn('Failed to fetch reported prayers from Supabase:', e);
+    return [];
+  }
+}
+
+/**
+ * Approves and unflags a reported prayer.
+ */
+export async function approveReportedPrayerInSupabase(prayerId: string): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const { error } = await supabase
+      .from('community_prayers')
+      .update({ is_reported: false, report_reason: null })
+      .eq('id', prayerId);
+    return !error;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Deletes an inappropriate prayer from Supabase.
+ */
+export async function deletePrayerFromSupabase(prayerId: string): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const { error } = await supabase.from('community_prayers').delete().eq('id', prayerId);
+    return !error;
+  } catch (e) {
+    return false;
+  }
+}
+
+// Mapper Helpers
 function mapSupabaseToCommunityPrayer(row: any): CommunityPrayer {
   return {
     id: String(row.id),
@@ -167,5 +316,20 @@ function mapSupabaseToCommunityPrayer(row: any): CommunityPrayer {
     createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
     updates: row.updates || [],
     isAnswered: !!row.is_answered,
+    isReported: !!row.is_reported,
+    reportReason: row.report_reason || undefined,
+  };
+}
+
+function mapSupabaseToPrayerCircle(row: any): PrayerCircle {
+  return {
+    id: String(row.id),
+    name: row.name || 'Prayer Circle',
+    category: row.category || 'family',
+    inviteCode: row.invite_code || '',
+    memberCount: row.member_count || 1,
+    createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
+    description: row.description || '',
+    isPrivate: !!row.is_private,
   };
 }

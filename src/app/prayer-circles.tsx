@@ -15,10 +15,15 @@ import { Stack, useRouter } from 'expo-router';
 import { Users, PlusCircle, Key, ShieldCheck, User, Share2, X } from 'lucide-react-native';
 import { useSpiritualStore, PrayerCircle } from '../store/useSpiritualStore';
 import { triggerLightHaptic, triggerSuccessHaptic } from '../services/mobileHaptics';
+import {
+  createCircleInSupabase,
+  findCircleByInviteCode,
+  incrementCircleMemberCount,
+} from '../services/supabaseSyncService';
 
 export default function PrayerCirclesScreen() {
   const router = useRouter();
-  const { prayerCircles, createPrayerCircle, joinCircleByCode } = useSpiritualStore();
+  const { prayerCircles, createPrayerCircle, joinCircleByCode, addRemoteCircle } = useSpiritualStore();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
@@ -29,13 +34,17 @@ export default function PrayerCirclesScreen() {
   const [description, setDescription] = useState('');
   const [isPrivate, setIsPrivate] = useState(true);
   const [inviteCodeInput, setInviteCodeInput] = useState('');
+  const [isJoining, setIsJoining] = useState(false);
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!circleName.trim()) {
       Alert.alert('Required Field', 'Please enter a name for your prayer circle.');
       return;
     }
     const created = createPrayerCircle(circleName.trim(), category, description.trim(), isPrivate);
+    // Asynchronously push to Supabase
+    createCircleInSupabase(created);
+    
     triggerSuccessHaptic();
     setIsCreateModalOpen(false);
     setCircleName('');
@@ -43,16 +52,39 @@ export default function PrayerCirclesScreen() {
     Alert.alert('Circle Created! 🎉', `Share Invite Code: ${created.inviteCode}`);
   };
 
-  const handleJoin = () => {
-    if (!inviteCodeInput.trim()) return;
-    const success = joinCircleByCode(inviteCodeInput.trim());
+  const handleJoin = async () => {
+    const code = inviteCodeInput.trim().toUpperCase();
+    if (!code) return;
+    setIsJoining(true);
+
+    // 1. Try local match first
+    const success = joinCircleByCode(code);
     if (success) {
       triggerSuccessHaptic();
       setIsJoinModalOpen(false);
       setInviteCodeInput('');
-      Alert.alert('Joined Circle!', 'You have joined the prayer circle successfully.');
-    } else {
-      Alert.alert('Invalid Code', 'Circle code not found. Please check and try again.');
+      setIsJoining(false);
+      Alert.alert('Joined Circle! 🎉', 'You have joined the prayer circle successfully.');
+      return;
+    }
+
+    // 2. Query Supabase for cloud-created circle across devices
+    try {
+      const remoteCircle = await findCircleByInviteCode(code);
+      if (remoteCircle) {
+        addRemoteCircle(remoteCircle);
+        incrementCircleMemberCount(remoteCircle.id);
+        triggerSuccessHaptic();
+        setIsJoinModalOpen(false);
+        setInviteCodeInput('');
+        Alert.alert('Joined Circle! 🎉', `Welcome to "${remoteCircle.name}"!`);
+      } else {
+        Alert.alert('Invalid Code', 'Circle code not found. Please verify the code and try again.');
+      }
+    } catch (e) {
+      Alert.alert('Join Failed', 'Unable to reach server. Please check your connection.');
+    } finally {
+      setIsJoining(false);
     }
   };
 

@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS public.community_prayers (
   support_count INT DEFAULT 0,
   is_answered BOOLEAN DEFAULT FALSE,
   updates JSONB DEFAULT '[]'::jsonb,
+  is_reported BOOLEAN DEFAULT FALSE,
+  report_reason TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -68,16 +70,72 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 5. Atomic Prayer Counter RPC Function
+-- 5. Atomic Counter & Helper RPC Functions
 CREATE OR REPLACE FUNCTION public.increment_prayer_count(row_id UUID)
 RETURNS VOID AS $$
 BEGIN
   UPDATE public.community_prayers
-  SET prayer_count = prayer_count + 1,
+  SET prayer_count = COALESCE(prayer_count, 0) + 1,
       updated_at = NOW()
   WHERE id = row_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.increment_standing_count(row_id UUID)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE public.community_prayers
+  SET standing_count = COALESCE(standing_count, 0) + 1,
+      updated_at = NOW()
+  WHERE id = row_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.increment_circle_member_count(circle_id UUID)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE public.prayer_circles
+  SET member_count = COALESCE(member_count, 0) + 1
+  WHERE id = circle_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.find_prayer_circle_by_code(code_str TEXT)
+RETURNS SETOF public.prayer_circles AS $$
+BEGIN
+  RETURN QUERY
+  SELECT * FROM public.prayer_circles
+  WHERE UPPER(invite_code) = UPPER(code_str)
+  LIMIT 1;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.report_prayer_burden(prayer_id UUID, reason_str TEXT)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE public.community_prayers
+  SET is_reported = TRUE,
+      report_reason = reason_str,
+      updated_at = NOW()
+  WHERE id = prayer_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Auto-provision user profile on new Supabase Auth sign-in
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.user_profiles (id, user_id, display_name)
+  VALUES (new.id, new.id::text, 'Believer')
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
 -- 6. Enable Row Level Security (RLS)
 ALTER TABLE public.community_prayers ENABLE ROW LEVEL SECURITY;

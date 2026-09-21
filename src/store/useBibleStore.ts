@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
 import { storage } from '../storage/storage';
+import { syncPlannerProgressToSupabase, syncUserDataBackupToSupabase } from '../services/cloudDevotionalSyncService';
 
 export type HighlightColor = 'gold' | 'sapphire' | 'emerald' | 'rose' | 'purple';
 export type ThemeMode = 'light' | 'dark' | 'sepia';
@@ -393,6 +394,9 @@ export const useBibleStore = create<BibleState>()(
             ? Math.max(0, currentPoints - 100)
             : currentPoints + 100;
 
+          // Asynchronous cloud sync to Supabase user_profiles
+          syncPlannerProgressToSupabase(updatedPlanDays, state.dailyTimeLogs, newStreak);
+
           return {
             completedPlanDays: updatedPlanDays,
             dailyStreak: newStreak,
@@ -405,14 +409,19 @@ export const useBibleStore = create<BibleState>()(
         set((state) => {
           const key = `${planId}:${dayNumber}`;
           const current = state.dailyTimeLogs[key] || { readingMinutes: 15, prayerMinutes: 10, quietMinutes: 10 };
-          return {
-            dailyTimeLogs: {
-              ...state.dailyTimeLogs,
-              [key]: {
-                ...current,
-                ...logUpdate,
-              },
+          const updatedLogs = {
+            ...state.dailyTimeLogs,
+            [key]: {
+              ...current,
+              ...logUpdate,
             },
+          };
+
+          // Asynchronous cloud sync to Supabase user_profiles
+          syncPlannerProgressToSupabase(state.completedPlanDays, updatedLogs, state.dailyStreak);
+
+          return {
+            dailyTimeLogs: updatedLogs,
           };
         });
       },

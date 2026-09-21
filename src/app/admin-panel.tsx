@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -10,18 +10,39 @@ import {
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { ShieldAlert, CheckCircle2, User, Check, Trash2 } from 'lucide-react-native';
-import { useSpiritualStore } from '../store/useSpiritualStore';
+import { useSpiritualStore, CommunityPrayer } from '../store/useSpiritualStore';
 import { triggerLightHaptic, triggerSuccessHaptic } from '../services/mobileHaptics';
+import {
+  fetchReportedPrayersFromSupabase,
+  approveReportedPrayerInSupabase,
+  deletePrayerFromSupabase,
+} from '../services/supabaseSyncService';
 
 export default function AdminPanelScreen() {
   const router = useRouter();
   const { communityPrayers, approveFlaggedPrayer, deleteFlaggedPrayer } = useSpiritualStore();
+  const [remoteFlagged, setRemoteFlagged] = useState<CommunityPrayer[]>([]);
 
-  const flaggedPrayers = communityPrayers.filter((p) => p.isReported);
+  useEffect(() => {
+    fetchReportedPrayersFromSupabase().then((data) => {
+      if (data && data.length > 0) {
+        setRemoteFlagged(data);
+      }
+    });
+  }, []);
+
+  const localFlagged = communityPrayers.filter((p) => p.isReported);
+  // Merge unique by ID
+  const flaggedPrayers = [
+    ...localFlagged,
+    ...remoteFlagged.filter((rp) => !localFlagged.some((lp) => lp.id === rp.id)),
+  ];
 
   const handleApprove = (id: string) => {
     triggerSuccessHaptic();
     approveFlaggedPrayer(id);
+    approveReportedPrayerInSupabase(id);
+    setRemoteFlagged((prev) => prev.filter((p) => p.id !== id));
     Alert.alert('Approved', 'Prayer request approved and unflagged.');
   };
 
@@ -34,6 +55,8 @@ export default function AdminPanelScreen() {
         style: 'destructive',
         onPress: () => {
           deleteFlaggedPrayer(id);
+          deletePrayerFromSupabase(id);
+          setRemoteFlagged((prev) => prev.filter((p) => p.id !== id));
           triggerSuccessHaptic();
         },
       },

@@ -15,6 +15,8 @@ import {
   subscribeToSupabaseCommunityPrayers,
   publishCommunityPrayerToSupabase,
   incrementSupabaseIPrayedCount,
+  incrementSupabaseStandingCount,
+  reportPrayerToSupabase,
 } from '../../services/supabaseSyncService';
 import { Heart, Plus, Lock, Globe, X, Users, ShieldAlert, UserPlus, UserCheck, Flag, Hand, Sparkles, MessageCircle, BookOpen } from 'lucide-react-native';
 
@@ -175,6 +177,7 @@ export default function PrayerScreen() {
   const handleStandingWithYou = (id: string) => {
     triggerLightHaptic();
     reactStandingWithYou(id);
+    incrementSupabaseStandingCount(id);
   };
 
   const handleSupport = (id: string) => {
@@ -191,6 +194,7 @@ export default function PrayerScreen() {
         style: 'destructive',
         onPress: () => {
           reportPrayerRequest(id, 'User reported content');
+          reportPrayerToSupabase(id, 'User reported content');
           Alert.alert('Reported', 'Thank you. Our moderation panel will review this request.');
         },
       },

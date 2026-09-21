@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, TextInput, StyleSheet, Alert, KeyboardAvo
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useBibleStore } from '../store/useBibleStore';
 import { X, Save, Trash2, Edit3 } from 'lucide-react-native';
+import { syncNoteToSupabase, deleteNoteFromSupabase } from '../services/cloudDevotionalSyncService';
 
 export default function NoteEditorModal() {
   const router = useRouter();
@@ -38,12 +39,24 @@ export default function NoteEditorModal() {
       Alert.alert('Empty Note', 'Please enter some text before saving.');
       return;
     }
-    saveNote(bookId, bookName, chapter, verse, verseText, content.trim());
+    const trimmed = content.trim();
+    saveNote(bookId, bookName, chapter, verse, verseText, trimmed);
+    syncNoteToSupabase({
+      verseKey,
+      bookId,
+      bookName,
+      chapter,
+      verse,
+      verseText,
+      content: trimmed,
+      updatedAt: Date.now(),
+    });
     router.back();
   };
 
   const handleDelete = () => {
     deleteNote(verseKey);
+    deleteNoteFromSupabase(bookId, chapter, verse);
     router.back();
   };
 

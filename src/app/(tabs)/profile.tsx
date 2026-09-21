@@ -39,6 +39,7 @@ import {
   Calendar,
   AlertTriangle,
   CheckCircle2,
+  ShieldCheck,
 } from 'lucide-react-native';
 
 export default function ProfileScreen() {
@@ -61,6 +62,7 @@ export default function ProfileScreen() {
   }, []);
 
   const [isNameModalOpen, setIsNameModalOpen] = useState(false);
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const [editedName, setEditedName] = useState(user.displayName);
   const [testNotificationFeedback, setTestNotificationFeedback] = useState<string | null>(null);
 
@@ -625,6 +627,19 @@ export default function ProfileScreen() {
             </View>
             <ChevronRight size={16} color={palette.textMuted} />
           </TouchableOpacity>
+
+          <View style={[styles.divider, { backgroundColor: palette.border }]} />
+
+          <TouchableOpacity onPress={() => { triggerLightHaptic(); setIsPrivacyModalOpen(true); }} style={styles.menuRow}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <ShieldCheck size={18} color="#10B981" />
+              <View>
+                <Text style={[styles.menuText, { color: palette.textPrimary }]}>Privacy & Community Rules</Text>
+                <Text style={{ fontSize: 11, color: palette.textMuted, marginTop: 1 }}>How your data is protected & fellowship guidelines</Text>
+              </View>
+            </View>
+            <ChevronRight size={16} color={palette.textMuted} />
+          </TouchableOpacity>
         </View>
 
         <View style={{ alignItems: 'center', marginTop: 28, marginBottom: 12, gap: 6 }}>
@@ -716,6 +731,92 @@ export default function ProfileScreen() {
             </View>
           </View>
         </TouchableOpacity>
+      </Modal>
+
+      {/* PRIVACY RULES MODAL */}
+      <Modal
+        visible={isPrivacyModalOpen}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsPrivacyModalOpen(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: palette.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderWidth: 1, borderColor: palette.cardBorder, maxHeight: '85%', paddingBottom: 30 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: palette.border }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <ShieldCheck size={22} color="#10B981" />
+                <Text style={{ fontSize: 17, fontWeight: '800', color: palette.textPrimary }}>Privacy & Community Rules</Text>
+              </View>
+              <TouchableOpacity onPress={() => setIsPrivacyModalOpen(false)} style={{ padding: 6 }}>
+                <X size={20} color={palette.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={{ padding: 20, gap: 12 }} showsVerticalScrollIndicator={false}>
+              {/* Rule 1 */}
+              <View style={{ flexDirection: 'row', padding: 14, borderRadius: 16, borderWidth: 1, borderColor: palette.border, backgroundColor: palette.inputBg, gap: 12, alignItems: 'flex-start' }}>
+                <Text style={{ fontSize: 22, marginTop: 2 }}>🛡️</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: palette.textPrimary, marginBottom: 4 }}>Your Devotionals Are Private</Text>
+                  <Text style={{ fontSize: 13, color: palette.textSecondary, lineHeight: 19 }}>
+                    Your personal study notes, private prayer journal, and bookmarks belong only to you. We never share them with other users.
+                  </Text>
+                </View>
+              </View>
+
+              {/* Rule 2 */}
+              <View style={{ flexDirection: 'row', padding: 14, borderRadius: 16, borderWidth: 1, borderColor: palette.border, backgroundColor: palette.inputBg, gap: 12, alignItems: 'flex-start' }}>
+                <Text style={{ fontSize: 22, marginTop: 2 }}>👤</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: palette.textPrimary, marginBottom: 4 }}>Anonymous by Design</Text>
+                  <Text style={{ fontSize: 13, color: palette.textSecondary, lineHeight: 19 }}>
+                    You do not need to create an account, type your real name, or give a password. You can use the app completely as a guest.
+                  </Text>
+                </View>
+              </View>
+
+              {/* Rule 3 */}
+              <View style={{ flexDirection: 'row', padding: 14, borderRadius: 16, borderWidth: 1, borderColor: palette.border, backgroundColor: palette.inputBg, gap: 12, alignItems: 'flex-start' }}>
+                <Text style={{ fontSize: 22, marginTop: 2 }}>🚫</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: palette.textPrimary, marginBottom: 4 }}>Zero Ads & No Data Selling</Text>
+                  <Text style={{ fontSize: 13, color: palette.textSecondary, lineHeight: 19 }}>
+                    We will never sell your spiritual reflections, reading habits, or identity to advertising brokers or third parties.
+                  </Text>
+                </View>
+              </View>
+
+              {/* Rule 4 */}
+              <View style={{ flexDirection: 'row', padding: 14, borderRadius: 16, borderWidth: 1, borderColor: palette.border, backgroundColor: palette.inputBg, gap: 12, alignItems: 'flex-start' }}>
+                <Text style={{ fontSize: 22, marginTop: 2 }}>🤝</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: palette.textPrimary, marginBottom: 4 }}>Community Fellowship Rules</Text>
+                  <Text style={{ fontSize: 13, color: palette.textSecondary, lineHeight: 19 }}>
+                    Public prayer burdens must be reverent and respectful. Inappropriate, hateful, or commercial content is strictly prohibited and will be removed immediately.
+                  </Text>
+                </View>
+              </View>
+
+              {/* Rule 5 */}
+              <View style={{ flexDirection: 'row', padding: 14, borderRadius: 16, borderWidth: 1, borderColor: palette.border, backgroundColor: palette.inputBg, gap: 12, alignItems: 'flex-start' }}>
+                <Text style={{ fontSize: 22, marginTop: 2 }}>🗑️</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: palette.textPrimary, marginBottom: 4 }}>Data Deletion Rights</Text>
+                  <Text style={{ fontSize: 13, color: palette.textSecondary, lineHeight: 19 }}>
+                    You can clear all local storage anytime, or email support to permanently delete any cloud records.
+                  </Text>
+                </View>
+              </View>
+
+              {/* Contact Box */}
+              <View style={{ padding: 16, borderRadius: 16, alignItems: 'center', backgroundColor: isDark ? 'rgba(79, 70, 229, 0.12)' : 'rgba(79, 70, 229, 0.06)', marginTop: 8, gap: 4 }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#4F46E5', textTransform: 'uppercase', letterSpacing: 0.8 }}>Official Privacy & Support Contact</Text>
+                <Text style={{ fontSize: 16, fontWeight: '800', color: palette.textPrimary }}>selabibleapp@gmail.com</Text>
+                <Text style={{ fontSize: 11, color: palette.textMuted, textAlign: 'center', marginTop: 2 }}>Questions or data requests will be answered within 48 hours.</Text>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );
