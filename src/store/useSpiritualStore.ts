@@ -627,7 +627,7 @@ export const useSpiritualStore = create<SpiritualState>()(
         email: '',
         spiritualStage: 5,
         spiritualStageTitle: 'Growing Disciple',
-        onboarded: true,
+        onboarded: storage.getBoolean('sela_has_onboarded') ?? false,
         growthGoals: ['faith', 'peace', 'prayer', 'wisdom'],
         timeCommitment: '15 min',
         timeOfDay: 'morning',
@@ -661,13 +661,21 @@ export const useSpiritualStore = create<SpiritualState>()(
       followedUserIds: ['author-hannah'],
       reportedPrayerIds: [],
 
-      setOnboardedPreferences: (goals, time, tod) => set((state) => ({
-        user: { ...state.user, growthGoals: goals, timeCommitment: time, timeOfDay: tod, onboarded: true },
-      })),
+      setOnboardedPreferences: (goals, time, tod) => {
+        storage.set('sela_has_onboarded', true);
+        set((state) => ({
+          user: { ...state.user, growthGoals: goals, timeCommitment: time, timeOfDay: tod, onboarded: true },
+        }));
+      },
 
-      updateUserProfile: (fields) => set((state) => ({
-        user: { ...state.user, ...fields },
-      })),
+      updateUserProfile: (fields) => {
+        if (fields.onboarded !== undefined) {
+          storage.set('sela_has_onboarded', fields.onboarded);
+        }
+        set((state) => ({
+          user: { ...state.user, ...fields },
+        }));
+      },
 
       markMorningJourneyComplete: (dateStr) => set((state) => ({
         morningCompletedDates: state.morningCompletedDates.includes(dateStr) 

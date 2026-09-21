@@ -38,6 +38,7 @@ import {
   Check,
 } from 'lucide-react-native';
 import { supabase } from '../services/supabaseConfig';
+import { setCompletedOnboarding } from '../services/authService';
 
 const ALL_GOALS: { id: GrowthGoal; label: string; icon: string }[] = [
   { id: 'faith', label: 'Faith', icon: '✝️' },
@@ -56,6 +57,14 @@ const ALL_GOALS: { id: GrowthGoal; label: string; icon: string }[] = [
 
 const TIME_OPTIONS: TimeCommitment[] = ['5 min', '10 min', '15 min', '30 min', '60 min'];
 
+const TIME_OPTION_CARDS: { id: TimeCommitment; label: string; desc: string; badge?: string }[] = [
+  { id: '5 min', label: '5 Minutes Daily', desc: 'Quick pause • Read daily scripture & a short prayer', badge: 'Light' },
+  { id: '10 min', label: '10 Minutes Daily', desc: 'Focused devotion • Verse reflection + guided meditation', badge: 'Focused' },
+  { id: '15 min', label: '15 Minutes Daily', desc: 'Balanced rhythm • Scripture, personal reflection & prayer', badge: 'Recommended' },
+  { id: '30 min', label: '30 Minutes Daily', desc: 'Deeper study • Full chapter reading, study notes & journaling', badge: 'Deeper' },
+  { id: '60 min', label: '60 Minutes Daily', desc: 'Extended communion • Reading plan, prayer circle & memory verses', badge: 'Immersive' },
+];
+
 const TIME_OF_DAY_OPTIONS: { id: TimeOfDay; label: string; sub: string }[] = [
   { id: 'morning', label: 'Morning Devotional', sub: 'e.g. 7:00 AM — start your day with God' },
   { id: 'afternoon', label: 'Midday Reflection', sub: 'e.g. 12:30 PM — pause and recenter' },
@@ -70,7 +79,7 @@ export default function OnboardingFlowScreen() {
   const isDark = themeMode === 'dark';
   const palette = isDark ? SpiritualTheme.dark : SpiritualTheme.light;
 
-  // Active step: 1 (Profile), 2 (Spiritual Stage), 3 (Goals), 4 (Routine)
+  // Active step: 1 (Name), 2 (Spiritual Stage), 3 (Goals), 4 (Time Commitment), 5 (Time of Day & Reminders)
   const [currentStep, setCurrentStep] = useState<number>(1);
 
   // Form State
@@ -100,7 +109,7 @@ export default function OnboardingFlowScreen() {
 
   const handleNextStep = () => {
     triggerLightHaptic();
-    if (currentStep < 4) {
+    if (currentStep < 5) {
       setCurrentStep(currentStep + 1);
     } else {
       handleCompleteOnboarding();
@@ -112,7 +121,7 @@ export default function OnboardingFlowScreen() {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     } else {
-      router.back();
+      router.replace('/login' as any);
     }
   };
 
@@ -120,7 +129,10 @@ export default function OnboardingFlowScreen() {
     const finalName = name.trim() || 'Friend';
     const stageTitle = activeStageInfo.title;
 
-    // 1. Update local Zustand persistent store
+    // 1. Set persistent onboarding flag in MMKV
+    setCompletedOnboarding(true);
+
+    // 2. Update local Zustand persistent store
     updateUserProfile({
       displayName: finalName,
       age: age.trim(),
@@ -134,12 +146,13 @@ export default function OnboardingFlowScreen() {
 
     setOnboardedPreferences(selectedGoals, selectedTime, selectedTod);
 
-    // 2. Sync to Supabase profiles table if available
+    // 3. Sync to Supabase user_profiles table if available
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (authUser) {
-        await supabase.from('profiles').upsert({
+        await supabase.from('user_profiles').upsert({
           id: authUser.id,
+          user_id: authUser.id,
           email: email.trim() || authUser.email,
           display_name: finalName,
           age: age.trim() ? parseInt(age.trim(), 10) : null,
@@ -169,32 +182,33 @@ export default function OnboardingFlowScreen() {
           <TouchableOpacity onPress={handlePrevStep} style={styles.backButton}>
             <ChevronLeft size={22} color={palette.textPrimary} />
             <Text style={[styles.backText, { color: palette.textPrimary }]}>
-              {currentStep === 1 ? 'Close' : 'Back'}
+              {currentStep === 1 ? 'Login' : 'Back'}
             </Text>
           </TouchableOpacity>
 
           <View style={{ alignItems: 'center' }}>
             <Text style={[styles.stepIndicatorText, { color: palette.accentGreen }]}>
-              STEP {currentStep} OF 4
+              QUESTION {currentStep} OF 5
             </Text>
             <Text style={[styles.stepTitleHeader, { color: palette.textPrimary }]}>
               {currentStep === 1 && 'Personal Profile'}
               {currentStep === 2 && 'Spiritual Stage'}
               {currentStep === 3 && 'Growth Goals'}
-              {currentStep === 4 && 'Daily Routine'}
+              {currentStep === 4 && 'Daily Commitment'}
+              {currentStep === 5 && 'Sacred Time of Day'}
             </Text>
           </View>
 
           <View style={{ width: 60 }} />
         </View>
 
-        {/* Progress Bar (25% per step) */}
+        {/* Progress Bar (20% per step) */}
         <View style={{ height: 4, backgroundColor: palette.border, width: '100%' }}>
           <View
             style={{
               height: '100%',
               backgroundColor: palette.accentGreen,
-              width: `${(currentStep / 4) * 100}%`,
+              width: `${(currentStep / 5) * 100}%`,
             }}
           />
         </View>
@@ -437,58 +451,90 @@ export default function OnboardingFlowScreen() {
             </View>
           )}
 
-          {/* ================= STEP 4: DAILY ROUTINE ================= */}
+          {/* ================= STEP 4: QUESTION 4 - DAILY COMMITMENT ================= */}
           {currentStep === 4 && (
             <View>
               <View style={styles.headerBox}>
                 <View style={[styles.iconCircle, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
                   <Clock size={30} color="#3B82F6" />
                 </View>
-                <Text style={[styles.heading, { color: palette.textPrimary }]}>Set Your Daily Rhythm</Text>
+                <Text style={[styles.heading, { color: palette.textPrimary }]}>Daily Time Commitment</Text>
                 <Text style={[styles.subheading, { color: palette.textSecondary }]}>
-                  Consistent small moments with God produce transformative long-term spiritual growth.
+                  How much quiet time would you like to set aside for Scripture and prayer each day?
                 </Text>
               </View>
 
-              {/* Time Commitment */}
-              <Text style={[styles.inputLabel, { color: palette.textPrimary }]}>Daily Time Commitment</Text>
-              <View style={styles.timeOptionsRow}>
-                {TIME_OPTIONS.map((t) => {
-                  const isSelected = selectedTime === t;
+              <View style={{ gap: 12 }}>
+                {TIME_OPTION_CARDS.map((item) => {
+                  const isSelected = selectedTime === item.id;
                   return (
                     <TouchableOpacity
-                      key={t}
+                      key={item.id}
                       activeOpacity={0.8}
                       onPress={() => {
                         triggerLightHaptic();
-                        setSelectedTime(t);
+                        setSelectedTime(item.id);
                       }}
                       style={[
-                        styles.timeOptionPill,
+                        styles.todCard,
                         {
-                          backgroundColor: isSelected ? palette.accentGreen : palette.card,
+                          backgroundColor: isSelected
+                            ? isDark
+                              ? 'rgba(5, 150, 105, 0.12)'
+                              : 'rgba(5, 150, 105, 0.08)'
+                            : palette.card,
                           borderColor: isSelected ? palette.accentGreen : palette.border,
                         },
                       ]}
                     >
-                      <Text
-                        style={[
-                          styles.timeOptionText,
-                          { color: isSelected ? '#FFFFFF' : palette.textPrimary },
-                        ]}
-                      >
-                        {t}
-                      </Text>
+                      <View style={{ flex: 1 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                          <Text style={[styles.todTitle, { color: palette.textPrimary }]}>{item.label}</Text>
+                          {item.badge && (
+                            <View
+                              style={{
+                                paddingHorizontal: 8,
+                                paddingVertical: 2,
+                                borderRadius: 6,
+                                backgroundColor: item.badge === 'Recommended' ? palette.accentGreen : palette.border,
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  fontSize: 10,
+                                  fontWeight: '700',
+                                  color: item.badge === 'Recommended' ? '#FFFFFF' : palette.textPrimary,
+                                }}
+                              >
+                                {item.badge}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text style={[styles.todSub, { color: palette.textSecondary }]}>{item.desc}</Text>
+                      </View>
+                      {isSelected && <CheckCircle2 size={20} color={palette.accentGreen} />}
                     </TouchableOpacity>
                   );
                 })}
               </View>
+            </View>
+          )}
 
-              {/* Best Time of Day */}
-              <Text style={[styles.inputLabel, { color: palette.textPrimary, marginTop: 20 }]}>
-                Best Time for You
-              </Text>
-              <View style={{ gap: 10, marginTop: 8 }}>
+          {/* ================= STEP 5: QUESTION 5 - SACRED TIME & REMINDERS ================= */}
+          {currentStep === 5 && (
+            <View>
+              <View style={styles.headerBox}>
+                <View style={[styles.iconCircle, { backgroundColor: 'rgba(217, 119, 6, 0.15)' }]}>
+                  <Sparkles size={30} color={palette.accentGold} />
+                </View>
+                <Text style={[styles.heading, { color: palette.textPrimary }]}>When Do You Meet with God?</Text>
+                <Text style={[styles.subheading, { color: palette.textSecondary }]}>
+                  Choose your primary devotional window so Sela can prepare your daily reflections and reminders.
+                </Text>
+              </View>
+
+              <View style={{ gap: 12 }}>
                 {TIME_OF_DAY_OPTIONS.map((tod) => {
                   const isSelected = selectedTod === tod.id;
                   return (
@@ -535,7 +581,7 @@ export default function OnboardingFlowScreen() {
                       Daily Gentle Reminders
                     </Text>
                     <Text style={[styles.reminderSub, { color: palette.textSecondary }]}>
-                      Receive an uplifting verse notification every day
+                      Receive an uplifting verse notification every day at your devotional time
                     </Text>
                   </View>
                 </View>
@@ -570,7 +616,7 @@ export default function OnboardingFlowScreen() {
               style={[styles.primaryCtaBtn, { backgroundColor: palette.accentGreen }]}
             >
               <Text style={styles.primaryCtaText}>
-                {currentStep < 4 ? 'Continue' : 'Complete Spiritual Setup'}
+                {currentStep < 5 ? 'Continue' : 'Complete & Enter Dashboard ✝️'}
               </Text>
               <ArrowRight size={20} color="#FFFFFF" />
             </TouchableOpacity>

@@ -40,7 +40,9 @@ import {
   AlertTriangle,
   CheckCircle2,
   ShieldCheck,
+  LogOut,
 } from 'lucide-react-native';
+import { signOutUser } from '../../services/authService';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -623,7 +625,10 @@ export default function ProfileScreen() {
           <TouchableOpacity onPress={() => { triggerLightHaptic(); router.push('/onboarding-flow' as any); }} style={styles.menuRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <Settings size={18} color={palette.textPrimary} />
-              <Text style={[styles.menuText, { color: palette.textPrimary }]}>Update Growth Goals & Schedule</Text>
+              <View>
+                <Text style={[styles.menuText, { color: palette.textPrimary }]}>Retake 5-Question Onboarding</Text>
+                <Text style={{ fontSize: 11, color: palette.textMuted, marginTop: 1 }}>Update your name, spiritual stage, goals, and daily rhythm</Text>
+              </View>
             </View>
             <ChevronRight size={16} color={palette.textMuted} />
           </TouchableOpacity>
@@ -636,6 +641,27 @@ export default function ProfileScreen() {
               <View>
                 <Text style={[styles.menuText, { color: palette.textPrimary }]}>Privacy & Community Rules</Text>
                 <Text style={{ fontSize: 11, color: palette.textMuted, marginTop: 1 }}>How your data is protected & fellowship guidelines</Text>
+              </View>
+            </View>
+            <ChevronRight size={16} color={palette.textMuted} />
+          </TouchableOpacity>
+
+          <View style={[styles.divider, { backgroundColor: palette.border }]} />
+
+          <TouchableOpacity
+            onPress={async () => {
+              triggerLightHaptic();
+              await signOutUser();
+              updateUserProfile({ onboarded: false });
+              router.replace('/login' as any);
+            }}
+            style={styles.menuRow}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <LogOut size={18} color="#EF4444" />
+              <View>
+                <Text style={[styles.menuText, { color: '#EF4444' }]}>Sign Out / Switch Account</Text>
+                <Text style={{ fontSize: 11, color: palette.textMuted, marginTop: 1 }}>Log out of this device or sign in with another account</Text>
               </View>
             </View>
             <ChevronRight size={16} color={palette.textMuted} />
