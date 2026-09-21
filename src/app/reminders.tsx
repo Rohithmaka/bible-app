@@ -141,14 +141,6 @@ export default function RemindersScreen() {
     return () => sub.remove();
   }, []);
 
-  // Check query params if user was directed to create a reminder directly
-  useEffect(() => {
-    if (params.action === 'add') {
-      const type = params.type === 'bible' ? 'bible_reading' : 'prayer';
-      openNewReminder(type);
-    }
-  }, [params.action, params.type]);
-
   const prayerReminders = reminders.filter((r) => r.type === 'prayer');
   const bibleReminders = reminders.filter((r) => r.type === 'bible_reading');
 
@@ -171,6 +163,14 @@ export default function RemindersScreen() {
     setIsEditorOpen(true);
     triggerLightHaptic();
   };
+
+  // Check query params if user was directed to create a reminder directly
+  useEffect(() => {
+    if (params.action === 'add') {
+      const type = params.type === 'bible' ? 'bible_reading' : 'prayer';
+      openNewReminder(type);
+    }
+  }, [params.action, params.type]);
 
   const openEditReminder = (reminder: ReminderItem) => {
     setEditingReminderId(reminder.id);

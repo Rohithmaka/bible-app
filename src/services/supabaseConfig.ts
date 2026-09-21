@@ -5,6 +5,16 @@ import { storage } from '../storage/storage';
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://your-project.supabase.co';
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'your-anon-key';
 
+export const isSupabaseConfigured = (): boolean => {
+  return (
+    !!process.env.EXPO_PUBLIC_SUPABASE_URL &&
+    !process.env.EXPO_PUBLIC_SUPABASE_URL.includes('your-project') &&
+    !!process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY &&
+    !process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY.includes('your-supabase-anon-key') &&
+    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY !== 'your-anon-key'
+  );
+};
+
 // MMKV Custom Adapter for Supabase Session Persistence
 const CustomMmkvStorageAdapter = {
   getItem: (key: string) => {

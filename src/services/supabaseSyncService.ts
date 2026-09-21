@@ -1,4 +1,4 @@
-import { supabase } from './supabaseConfig';
+import { supabase, isSupabaseConfigured } from './supabaseConfig';
 import { CommunityPrayer, PrayerCircle } from '../store/useSpiritualStore';
 
 /**
@@ -8,6 +8,9 @@ import { CommunityPrayer, PrayerCircle } from '../store/useSpiritualStore';
 export function subscribeToSupabaseCommunityPrayers(
   onUpdate: (prayers: CommunityPrayer[]) => void
 ): () => void {
+  if (!isSupabaseConfigured()) {
+    return () => {};
+  }
   try {
     // 1. Initial Fetch
     supabase
@@ -62,6 +65,7 @@ export async function publishCommunityPrayerToSupabase(prayer: {
   burdenText: string;
   category: string;
 }) {
+  if (!isSupabaseConfigured()) return null;
   try {
     const { data, error } = await supabase
       .from('community_prayers')
@@ -96,6 +100,7 @@ export async function publishCommunityPrayerToSupabase(prayer: {
  * Atomically increments the prayer count in Supabase PostgreSQL using RPC or direct update.
  */
 export async function incrementSupabaseIPrayedCount(prayerId: string) {
+  if (!isSupabaseConfigured()) return;
   try {
     // Attempt RPC increment
     const { error } = await supabase.rpc('increment_prayer_count', { row_id: prayerId });
@@ -118,6 +123,7 @@ export async function incrementSupabaseIPrayedCount(prayerId: string) {
  * Creates a new private prayer circle in Supabase.
  */
 export async function createCircleInSupabase(circle: Omit<PrayerCircle, 'id'>) {
+  if (!isSupabaseConfigured()) return null;
   try {
     const { data, error } = await supabase
       .from('prayer_circles')

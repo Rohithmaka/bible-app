@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Image }
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useBibleStore } from '../../store/useBibleStore';
-import { useSpiritualStore } from '../../store/useSpiritualStore';
+import { useSpiritualStore, getDailyScriptureForDate } from '../../store/useSpiritualStore';
 import { SpiritualTheme, ScriptureTypography, isTeluguScript } from '../../constants/spiritualTheme';
 import { triggerLightHaptic, triggerMediumHaptic, triggerSuccessHaptic } from '../../services/mobileHaptics';
 import { shareScriptureVerse } from '../../services/mobileShare';
@@ -31,7 +31,6 @@ export default function HomeScreen() {
     // Refresh Daily Scripture automatically if calendar day has changed
     const currentScripture = useSpiritualStore.getState().todayScripture;
     if (currentScripture.dateStr !== todayStr) {
-      const { getDailyScriptureForDate } = require('../../store/useSpiritualStore');
       useSpiritualStore.setState({ todayScripture: getDailyScriptureForDate() });
     }
 
