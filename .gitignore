@@ -43,6 +43,7 @@ example
 /ios
 /android
 
-# APK binaries
+# APK & App Bundle binaries
 *.apk
+*.aab
 

@@ -1,4 +1,4 @@
-import { getChapterVerses, Verse, BIBLE_BOOKS } from '../data/bibleData';
+import { getChapterVerses, Verse, BIBLE_BOOKS, TELUGU_OFFLINE_DATA } from '../data/bibleData';
 import { TRANSLATION_CATALOG, TranslationLicenseInfo, getTranslationInfo } from './translationCatalog';
 
 export interface TranslationMetadata {
@@ -367,6 +367,13 @@ export async function fetchChapterVerses(
       }
     } catch (error) {
       console.warn(`Telugu fetch failed for ${bookName} ${chapter}:`, error);
+    }
+
+    // Offline pre-cached fallback for key Telugu scriptures
+    const offlineTelugu = TELUGU_OFFLINE_DATA[bookId.toUpperCase()]?.[chapter];
+    if (offlineTelugu && offlineTelugu.length > 0) {
+      verseCache[cacheKey] = offlineTelugu;
+      return offlineTelugu;
     }
   }
 
