@@ -611,7 +611,7 @@ export default function ProfileScreen() {
         </View>
 
         <Text style={{ fontSize: 12, color: palette.textMuted, textAlign: 'center', marginTop: 24 }}>
-          Holy Bible & Daily Spiritual Growth App • Version 1.0.0
+          Sela • Holy Bible & Spiritual Growth • Version 1.0.0
         </Text>
       </ScrollView>
 

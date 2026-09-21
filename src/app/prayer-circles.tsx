@@ -60,7 +60,7 @@ export default function PrayerCirclesScreen() {
     triggerLightHaptic();
     try {
       await Share.share({
-        message: `Join our private Prayer Circle "${circle.name}" on the Holy Bible & Prayer App! Use Invite Code: ${circle.inviteCode}`,
+        message: `Join our private Prayer Circle "${circle.name}" on Sela! Use Invite Code: ${circle.inviteCode}`,
       });
     } catch (e) {
       console.log('Share canceled');

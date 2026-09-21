@@ -1,7 +1,7 @@
 import { Share, Platform } from 'react-native';
 
 export async function shareScriptureVerse(reference: string, verseText: string, translation: string = 'KJV') {
-  const shareMessage = `"${verseText}"\n\n— ${reference} (${translation})\n\nShared via Holy Bible App`;
+  const shareMessage = `"${verseText}"\n\n— ${reference} (${translation})\n\nShared via Sela App`;
   try {
     const result = await Share.share(
       {

@@ -1,5 +1,4 @@
--- ========================================================
--- ALTER / HOLY BIBLE APP SUPABASE DATABASE MIGRATION SCRIPT
+-- SELA - HOLY BIBLE & SPIRITUAL GROWTH APP SUPABASE DATABASE MIGRATION SCRIPT
 -- Copy and run this script in your Supabase SQL Editor
 -- ========================================================
 

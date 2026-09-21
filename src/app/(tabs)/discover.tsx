@@ -25,7 +25,7 @@ export default function DiscoverScreen() {
     const { keyVerse } = DAILY_DEVOTIONAL;
     Share.share({
       title: 'Verse of the Day',
-      message: `"${keyVerse.text}"\n\n— ${keyVerse.bookName} ${keyVerse.chapter}:${keyVerse.verse}\n\nShared via Holy Bible App`,
+      message: `"${keyVerse.text}"\n\n— ${keyVerse.bookName} ${keyVerse.chapter}:${keyVerse.verse}\n\nShared via Sela App`,
     });
   };
 

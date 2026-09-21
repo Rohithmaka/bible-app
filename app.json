@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Holy Bible",
-    "slug": "holy-bible-app",
+    "name": "Sela",
+    "slug": "sela",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "holybible",
+    "scheme": "sela",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
