@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Platform, Alert, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Platform, Alert, Modal, Linking } from 'react-native';
 import { useBibleStore, ThemeMode, BibleTranslation } from '../../store/useBibleStore';
-import { Sun, Moon, Coffee, Type, BookOpen, Volume2, ShieldCheck, RefreshCw, Check, ChevronRight, X } from 'lucide-react-native';
+import { Sun, Moon, Coffee, Type, BookOpen, Volume2, ShieldCheck, RefreshCw, Check, ChevronRight, X, Mail } from 'lucide-react-native';
 
 export default function SettingsScreen() {
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
@@ -183,6 +183,32 @@ export default function SettingsScreen() {
             <View style={{ flex: 1 }}>
               <Text style={[styles.transTitle, { color: textColor }]}>Privacy & Community Rules</Text>
               <Text style={styles.transSub}>How your data is protected & community guidelines</Text>
+            </View>
+            <ChevronRight size={18} color="#94A3B8" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Help & Support Section */}
+        <View style={[styles.sectionCard, { backgroundColor: cardBg, borderColor }]}>
+          <View style={styles.sectionHeader}>
+            <Mail size={20} color="#3B82F6" style={{ marginRight: 8 }} />
+            <Text style={[styles.sectionTitle, { color: textColor }]}>Help & Support</Text>
+          </View>
+
+          <TouchableOpacity
+            onPress={() => {
+              Linking.openURL('mailto:selabibleapp@gmail.com?subject=Sela%20Holy%20Bible%20Support%20Request');
+            }}
+            style={[styles.privacyRow, { borderColor }]}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.transTitle, { color: textColor }]}>Email Support Team</Text>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: '#3B82F6', marginTop: 3, marginBottom: 2 }}>
+                selabibleapp@gmail.com
+              </Text>
+              <Text style={styles.transSub}>
+                Tap to email us for feedback, prayer circle support, or technical help.
+              </Text>
             </View>
             <ChevronRight size={18} color="#94A3B8" />
           </TouchableOpacity>

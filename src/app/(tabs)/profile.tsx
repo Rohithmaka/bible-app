@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Switch, StyleSheet, Modal, TextInput, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Switch, StyleSheet, Modal, TextInput, Image, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useBibleStore } from '../../store/useBibleStore';
@@ -641,6 +641,25 @@ export default function ProfileScreen() {
               <View>
                 <Text style={[styles.menuText, { color: palette.textPrimary }]}>Privacy & Community Rules</Text>
                 <Text style={{ fontSize: 11, color: palette.textMuted, marginTop: 1 }}>How your data is protected & fellowship guidelines</Text>
+              </View>
+            </View>
+            <ChevronRight size={16} color={palette.textMuted} />
+          </TouchableOpacity>
+
+          <View style={[styles.divider, { backgroundColor: palette.border }]} />
+
+          <TouchableOpacity
+            onPress={() => {
+              triggerLightHaptic();
+              Linking.openURL('mailto:selabibleapp@gmail.com?subject=Sela%20Holy%20Bible%20Support');
+            }}
+            style={styles.menuRow}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <Mail size={18} color="#3B82F6" />
+              <View>
+                <Text style={[styles.menuText, { color: palette.textPrimary }]}>Help & Support</Text>
+                <Text style={{ fontSize: 11, color: palette.textMuted, marginTop: 1 }}>selabibleapp@gmail.com • Tap to email us</Text>
               </View>
             </View>
             <ChevronRight size={16} color={palette.textMuted} />

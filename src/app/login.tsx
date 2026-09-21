@@ -10,6 +10,7 @@ import {
   Platform,
   ScrollView,
   Image,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -407,6 +408,18 @@ export default function LoginScreen() {
               Your prayers, highlights, and journals are private and secure.
             </Text>
           </View>
+
+          {/* Support Email Link */}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => Linking.openURL('mailto:selabibleapp@gmail.com?subject=Sela%20Bible%20App%20Support')}
+            style={{ alignItems: 'center', marginTop: 14, marginBottom: 8 }}
+          >
+            <Text style={{ fontSize: 12, color: palette.textMuted }}>
+              Need help? Email support:{' '}
+              <Text style={{ color: palette.accentGreen, fontWeight: '700' }}>selabibleapp@gmail.com</Text>
+            </Text>
+          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
