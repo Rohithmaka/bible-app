@@ -1,14 +1,16 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ImageBackground, Share, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useBibleStore } from '../../store/useBibleStore';
-import { DAILY_DEVOTIONAL, TOPICAL_CATEGORIES, BIBLE_READING_PLANS } from '../../data/bibleData';
+import { useSpiritualStore, getDailyScriptureForDate } from '../../store/useSpiritualStore';
+import { TOPICAL_CATEGORIES, BIBLE_READING_PLANS } from '../../data/bibleData';
 import { isTeluguScript } from '../../constants/spiritualTheme';
 import { Flame, Sparkles, Heart, Shield, Zap, Compass, Share2, BookOpen, CheckCircle, ArrowRight } from 'lucide-react-native';
 
 export default function DiscoverScreen() {
   const router = useRouter();
   const { setLocation, themeMode, dailyStreak, enrolledPlanIds, completedPlanDays, enrollPlan } = useBibleStore();
+  const { todayScripture } = useSpiritualStore();
 
   const isDark = themeMode === 'dark';
   const bgColor = isDark ? '#0F172A' : '#F8FAFC';
@@ -16,18 +18,26 @@ export default function DiscoverScreen() {
   const cardBg = isDark ? '#1E293B' : '#FFFFFF';
   const borderColor = isDark ? '#334155' : '#E2E8F0';
 
+  useEffect(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (todayScripture.dateStr !== todayStr) {
+      useSpiritualStore.setState({ todayScripture: getDailyScriptureForDate() });
+    }
+  }, []);
+
   const handleReadVerse = (bookId: string, chapter: number) => {
     setLocation(bookId, chapter);
     router.push('/(tabs)');
   };
 
   const handleShareDailyVerse = () => {
-    const { keyVerse } = DAILY_DEVOTIONAL;
     Share.share({
       title: 'Verse of the Day',
-      message: `"${keyVerse.text}"\n\n— ${keyVerse.bookName} ${keyVerse.chapter}:${keyVerse.verse}\n\nShared via Sela App`,
+      message: `"${todayScripture.verseText}"\n\n— ${todayScripture.reference}\n\nShared via Sela App`,
     });
   };
+
+  const todayFormatted = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
@@ -35,7 +45,7 @@ export default function DiscoverScreen() {
         {/* Top Header */}
         <View style={styles.topHeader}>
           <View>
-            <Text style={styles.todayDate}>{DAILY_DEVOTIONAL.date}</Text>
+            <Text style={styles.todayDate}>{todayFormatted}</Text>
             <Text style={[styles.mainHeading, { color: textColor }]}>Daily Devotion</Text>
           </View>
           <TouchableOpacity
@@ -63,19 +73,19 @@ export default function DiscoverScreen() {
           <Text
             style={[
               styles.heroVerseText,
-              isTeluguScript(DAILY_DEVOTIONAL.keyVerse.text)
+              isTeluguScript(todayScripture.verseText)
                 ? { fontFamily: Platform.OS === 'android' ? 'Mandali-Bold' : 'Mandali', fontWeight: '700' }
                 : null,
             ]}
           >
-            "{DAILY_DEVOTIONAL.keyVerse.text}"
+            "{todayScripture.verseText}"
           </Text>
           <Text style={styles.heroVerseRef}>
-            — {DAILY_DEVOTIONAL.keyVerse.bookName} {DAILY_DEVOTIONAL.keyVerse.chapter}:{DAILY_DEVOTIONAL.keyVerse.verse}
+            — {todayScripture.reference} ({todayScripture.translation})
           </Text>
 
           <TouchableOpacity
-            onPress={() => handleReadVerse('PHP', 4)}
+            onPress={() => handleReadVerse(todayScripture.bookId, todayScripture.chapter)}
             style={styles.heroReadBtn}
           >
             <BookOpen size={16} color="#4F46E5" style={{ marginRight: 6 }} />
@@ -85,13 +95,27 @@ export default function DiscoverScreen() {
 
         {/* Today's Reflection */}
         <View style={[styles.sectionCard, { backgroundColor: cardBg, borderColor }]}>
-          <Text style={[styles.cardTitle, { color: textColor }]}>{DAILY_DEVOTIONAL.title}</Text>
-          <Text style={styles.reflectionText}>{DAILY_DEVOTIONAL.reflection}</Text>
+          <Text style={[styles.cardTitle, { color: textColor }]}>{todayScripture.reference} • Explanation & Reflection</Text>
+          <Text style={styles.reflectionText}>{todayScripture.understand}</Text>
+
+          {todayScripture.reflectQuestion ? (
+            <View style={{ marginTop: 14, marginBottom: 14, padding: 14, borderRadius: 14, backgroundColor: isDark ? '#33415555' : '#F1F5F9', borderWidth: 1, borderColor }}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#059669', marginBottom: 4 }}>Heart Question</Text>
+              <Text style={{ fontSize: 13, color: textColor, lineHeight: 19 }}>{todayScripture.reflectQuestion}</Text>
+            </View>
+          ) : null}
 
           <View style={styles.prayerBox}>
-            <Text style={styles.prayerTitle}>Today's Prayer</Text>
-            <Text style={styles.prayerText}>"{DAILY_DEVOTIONAL.prayer}"</Text>
+            <Text style={styles.prayerTitle}>Today's Guided Prayer</Text>
+            <Text style={styles.prayerText}>"{todayScripture.guidedPrayer}"</Text>
           </View>
+
+          {todayScripture.practicalApplication ? (
+            <View style={{ marginTop: 14, padding: 12, borderRadius: 12, backgroundColor: isDark ? '#064E3B22' : '#ECFDF5', borderWidth: 1, borderColor: '#10B98144' }}>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#059669', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>Daily Action Step</Text>
+              <Text style={{ fontSize: 13, color: isDark ? '#A7F3D0' : '#065F46', lineHeight: 18 }}>{todayScripture.practicalApplication}</Text>
+            </View>
+          ) : null}
         </View>
 
         {/* Topical Bible Categories */}
