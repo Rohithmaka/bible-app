@@ -811,11 +811,11 @@ export default function ProfileScreen() {
 
               {/* Rule 2 */}
               <View style={{ flexDirection: 'row', padding: 14, borderRadius: 16, borderWidth: 1, borderColor: palette.border, backgroundColor: palette.inputBg, gap: 12, alignItems: 'flex-start' }}>
-                <Text style={{ fontSize: 22, marginTop: 2 }}>👤</Text>
+                <Text style={{ fontSize: 22, marginTop: 2 }}>🔒</Text>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 15, fontWeight: '700', color: palette.textPrimary, marginBottom: 4 }}>Anonymous by Design</Text>
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: palette.textPrimary, marginBottom: 4 }}>Private & Secure</Text>
                   <Text style={{ fontSize: 13, color: palette.textSecondary, lineHeight: 19 }}>
-                    You do not need to create an account, type your real name, or give a password. You can use the app completely as a guest.
+                    Your spiritual reflections, prayers, and highlights are encrypted and tied strictly to your email account.
                   </Text>
                 </View>
               </View>

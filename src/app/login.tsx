@@ -17,19 +17,15 @@ import { useRouter } from 'expo-router';
 import { useBibleStore } from '../store/useBibleStore';
 import { SpiritualTheme } from '../constants/spiritualTheme';
 import {
-  signInAsGuest,
   signInWithEmail,
   signUpWithEmail,
-  signInWithGoogle,
   hasCompletedOnboarding,
 } from '../services/authService';
 import { triggerLightHaptic } from '../services/mobileHaptics';
 import {
-  Sparkles,
   Mail,
   Lock,
   User,
-  ArrowRight,
   ShieldCheck,
   CheckCircle2,
   AlertCircle,
@@ -43,14 +39,12 @@ export default function LoginScreen() {
   const isDark = themeMode === 'dark';
   const palette = isDark ? SpiritualTheme.dark : SpiritualTheme.light;
 
-  // Auth Mode: 'options' | 'email_signin' | 'email_signup'
-  const [authMode, setAuthMode] = useState<'options' | 'email_signin' | 'email_signup'>('options');
+  // Auth Mode: 'signin' | 'signup'
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [guestLoading, setGuestLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
@@ -63,44 +57,14 @@ export default function LoginScreen() {
     }
   };
 
-  const handleGuestSignIn = async () => {
-    setGuestLoading(true);
-    setErrorMessage(null);
-    try {
-      await signInAsGuest('Friend');
-      navigateNext();
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to start guest session.');
-    } finally {
-      setGuestLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    setGoogleLoading(true);
-    setErrorMessage(null);
-    try {
-      const res = await signInWithGoogle();
-      if (res.user) {
-        navigateNext();
-      } else if (res.error) {
-        // Friendly notice if Google OAuth is not enabled in dashboard yet
-        setErrorMessage(
-          res.error.includes('provider')
-            ? 'Google Sign-In is not enabled yet in your Supabase dashboard. You can continue as Guest or use Email.'
-            : res.error
-        );
-      }
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Google sign-in error.');
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
-
   const handleEmailAuth = async () => {
     if (!email.trim() || !password.trim()) {
       setErrorMessage('Please provide both your email and password.');
+      return;
+    }
+
+    if (authMode === 'signup' && !name.trim()) {
+      setErrorMessage('Please enter your name to personalize your account.');
       return;
     }
 
@@ -109,19 +73,19 @@ export default function LoginScreen() {
     setInfoMessage(null);
 
     try {
-      if (authMode === 'email_signin') {
+      if (authMode === 'signin') {
         const res = await signInWithEmail(email, password);
         if (res.user) {
           navigateNext();
         } else {
-          setErrorMessage(res.error || 'Sign in failed. Check your email or password.');
+          setErrorMessage(res.error || 'Sign in failed. Please check your email or password.');
         }
       } else {
         // Sign Up
         const res = await signUpWithEmail(email, password, name);
         if (res.user) {
           if (res.confirmationRequired) {
-            setInfoMessage('Account created! Please check your email inbox to verify your account, or continue right away.');
+            setInfoMessage('Account created! Please check your email inbox to verify, or continue into the app.');
             setTimeout(() => {
               navigateNext();
             }, 1800);
@@ -164,8 +128,55 @@ export default function LoginScreen() {
               Sela Holy Bible
             </Text>
             <Text style={[styles.subtitleText, { color: palette.textSecondary }]}>
-              Your sacred sanctuary for Scripture, daily prayers, and spiritual fellowship.
+              Your sacred sanctuary for Scripture, daily devotions, and prayer fellowship.
             </Text>
+          </View>
+
+          {/* Mode Switcher Tabs */}
+          <View style={[styles.tabContainer, { backgroundColor: palette.card, borderColor: palette.border }]}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => {
+                triggerLightHaptic();
+                setAuthMode('signin');
+                setErrorMessage(null);
+              }}
+              style={[
+                styles.tabButton,
+                authMode === 'signin' && { backgroundColor: palette.accentGreen },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.tabButtonText,
+                  { color: authMode === 'signin' ? '#FFFFFF' : palette.textSecondary },
+                ]}
+              >
+                Sign In
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => {
+                triggerLightHaptic();
+                setAuthMode('signup');
+                setErrorMessage(null);
+              }}
+              style={[
+                styles.tabButton,
+                authMode === 'signup' && { backgroundColor: palette.accentGreen },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.tabButtonText,
+                  { color: authMode === 'signup' ? '#FFFFFF' : palette.textSecondary },
+                ]}
+              >
+                Create Account
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* Feedback Banners */}
@@ -183,229 +194,103 @@ export default function LoginScreen() {
             </View>
           )}
 
-          {/* Options Mode */}
-          {authMode === 'options' && (
-            <View style={styles.buttonStack}>
-              {/* Primary: Continue as Guest (Fast & Zero Friction) */}
-              <TouchableOpacity
-                onPress={handleGuestSignIn}
-                disabled={guestLoading}
-                activeOpacity={0.85}
-                style={[
-                  styles.guestButton,
-                  { backgroundColor: palette.accentGreen },
-                ]}
-              >
-                {guestLoading ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <>
-                    <View style={styles.guestButtonContent}>
-                      <Sparkles size={20} color="#FFFFFF" style={{ marginRight: 10 }} />
-                      <Text style={styles.guestButtonText}>Continue as Guest</Text>
-                    </View>
-                    <ArrowRight size={18} color="#FFFFFF" />
-                  </>
-                )}
-              </TouchableOpacity>
-              <Text style={[styles.guestSubtext, { color: palette.textMuted }]}>
-                Instant 1-tap entry • No password needed • Save prayers & notes
-              </Text>
-
-              <View style={styles.dividerRow}>
-                <View style={[styles.dividerLine, { backgroundColor: palette.border }]} />
-                <Text style={[styles.dividerText, { color: palette.textMuted }]}>
-                  OR SYNC ACROSS DEVICES
-                </Text>
-                <View style={[styles.dividerLine, { backgroundColor: palette.border }]} />
+          {/* Form Card */}
+          <View style={[styles.formCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
+            {/* Full Name (Sign Up only) */}
+            {authMode === 'signup' && (
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: palette.textPrimary }]}>Full Name</Text>
+                <View style={[styles.inputWrapper, { backgroundColor: palette.background, borderColor: palette.border }]}>
+                  <User size={18} color={palette.textSecondary} style={styles.inputIcon} />
+                  <TextInput
+                    style={[styles.textInput, { color: palette.textPrimary }]}
+                    placeholder="e.g. Grace Robinson"
+                    placeholderTextColor={palette.textMuted}
+                    value={name}
+                    onChangeText={setName}
+                  />
+                </View>
               </View>
+            )}
 
-              {/* Google Sign-In */}
-              <TouchableOpacity
-                onPress={handleGoogleSignIn}
-                disabled={googleLoading}
-                activeOpacity={0.8}
-                style={[
-                  styles.secondaryButton,
-                  { backgroundColor: palette.card, borderColor: palette.border },
-                ]}
-              >
-                {googleLoading ? (
-                  <ActivityIndicator color={palette.textPrimary} />
-                ) : (
-                  <>
-                    <View style={{ width: 22, alignItems: 'center', marginRight: 10 }}>
-                      <Text style={{ fontSize: 18 }}>🌐</Text>
-                    </View>
-                    <Text style={[styles.secondaryButtonText, { color: palette.textPrimary }]}>
-                      Continue with Google
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-
-              {/* Email Sign-In Toggle */}
-              <TouchableOpacity
-                onPress={() => {
-                  triggerLightHaptic();
-                  setAuthMode('email_signin');
-                }}
-                activeOpacity={0.8}
-                style={[
-                  styles.secondaryButton,
-                  { backgroundColor: palette.card, borderColor: palette.border },
-                ]}
-              >
-                <Mail size={18} color={palette.textPrimary} style={{ marginRight: 10 }} />
-                <Text style={[styles.secondaryButtonText, { color: palette.textPrimary }]}>
-                  Sign in with Email
-                </Text>
-              </TouchableOpacity>
-
-              {/* Create Account Link */}
-              <View style={styles.footerLinkRow}>
-                <Text style={{ fontSize: 13, color: palette.textSecondary }}>
-                  New to Sela?{' '}
-                </Text>
-                <TouchableOpacity
-                  onPress={() => {
-                    triggerLightHaptic();
-                    setAuthMode('email_signup');
-                  }}
-                >
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: palette.accentGreen }}>
-                    Create Account
-                  </Text>
-                </TouchableOpacity>
+            {/* Email Address */}
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, { color: palette.textPrimary }]}>Email Address</Text>
+              <View style={[styles.inputWrapper, { backgroundColor: palette.background, borderColor: palette.border }]}>
+                <Mail size={18} color={palette.textSecondary} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.textInput, { color: palette.textPrimary }]}
+                  placeholder="name@example.com"
+                  placeholderTextColor={palette.textMuted}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  value={email}
+                  onChangeText={setEmail}
+                />
               </View>
             </View>
-          )}
 
-          {/* Email Sign-In / Sign-Up Form */}
-          {authMode !== 'options' && (
-            <View style={[styles.formCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
-              {/* Form Title & Switcher */}
-              <View style={styles.formHeader}>
-                <Text style={[styles.formTitle, { color: palette.textPrimary }]}>
-                  {authMode === 'email_signin' ? 'Sign In with Email' : 'Create Free Account'}
-                </Text>
-                <Text style={[styles.formSubtitle, { color: palette.textSecondary }]}>
-                  {authMode === 'email_signin'
-                    ? 'Enter your email and password to continue.'
-                    : 'Create your account to sync your devotions everywhere.'}
-                </Text>
+            {/* Password */}
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, { color: palette.textPrimary }]}>Password</Text>
+              <View style={[styles.inputWrapper, { backgroundColor: palette.background, borderColor: palette.border }]}>
+                <Lock size={18} color={palette.textSecondary} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.textInput, { color: palette.textPrimary }]}
+                  placeholder="••••••••"
+                  placeholderTextColor={palette.textMuted}
+                  secureTextEntry
+                  value={password}
+                  onChangeText={setPassword}
+                />
               </View>
+            </View>
 
-              {/* Full Name (Sign Up only) */}
-              {authMode === 'email_signup' && (
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.inputLabel, { color: palette.textPrimary }]}>Your Name</Text>
-                  <View style={[styles.inputWrapper, { backgroundColor: palette.background, borderColor: palette.border }]}>
-                    <User size={18} color={palette.textSecondary} style={styles.inputIcon} />
-                    <TextInput
-                      style={[styles.textInput, { color: palette.textPrimary }]}
-                      placeholder="e.g. Grace"
-                      placeholderTextColor={palette.textMuted}
-                      value={name}
-                      onChangeText={setName}
-                    />
-                  </View>
-                </View>
+            {/* Submit Button */}
+            <TouchableOpacity
+              onPress={handleEmailAuth}
+              disabled={loading}
+              activeOpacity={0.85}
+              style={[styles.submitButton, { backgroundColor: palette.accentGreen }]}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <>
+                  {authMode === 'signin' ? (
+                    <LogIn size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+                  ) : (
+                    <UserPlus size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+                  )}
+                  <Text style={styles.submitButtonText}>
+                    {authMode === 'signin' ? 'Sign In' : 'Create Free Account'}
+                  </Text>
+                </>
               )}
+            </TouchableOpacity>
 
-              {/* Email */}
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: palette.textPrimary }]}>Email Address</Text>
-                <View style={[styles.inputWrapper, { backgroundColor: palette.background, borderColor: palette.border }]}>
-                  <Mail size={18} color={palette.textSecondary} style={styles.inputIcon} />
-                  <TextInput
-                    style={[styles.textInput, { color: palette.textPrimary }]}
-                    placeholder="you@example.com"
-                    placeholderTextColor={palette.textMuted}
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                    value={email}
-                    onChangeText={setEmail}
-                  />
-                </View>
-              </View>
-
-              {/* Password */}
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: palette.textPrimary }]}>Password</Text>
-                <View style={[styles.inputWrapper, { backgroundColor: palette.background, borderColor: palette.border }]}>
-                  <Lock size={18} color={palette.textSecondary} style={styles.inputIcon} />
-                  <TextInput
-                    style={[styles.textInput, { color: palette.textPrimary }]}
-                    placeholder="••••••••"
-                    placeholderTextColor={palette.textMuted}
-                    secureTextEntry
-                    value={password}
-                    onChangeText={setPassword}
-                  />
-                </View>
-              </View>
-
-              {/* Submit Button */}
-              <TouchableOpacity
-                onPress={handleEmailAuth}
-                disabled={loading}
-                activeOpacity={0.85}
-                style={[styles.submitButton, { backgroundColor: palette.accentGreen }]}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <>
-                    {authMode === 'email_signin' ? (
-                      <LogIn size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
-                    ) : (
-                      <UserPlus size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
-                    )}
-                    <Text style={styles.submitButtonText}>
-                      {authMode === 'email_signin' ? 'Sign In' : 'Create Account'}
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-
-              {/* Switch Mode or Go Back */}
-              <View style={styles.formFooter}>
-                <TouchableOpacity
-                  onPress={() => {
-                    triggerLightHaptic();
-                    setAuthMode(authMode === 'email_signin' ? 'email_signup' : 'email_signin');
-                    setErrorMessage(null);
-                  }}
-                  style={{ marginBottom: 12 }}
-                >
-                  <Text style={[styles.switchModeText, { color: palette.accentGreen }]}>
-                    {authMode === 'email_signin'
-                      ? "Don't have an account? Create one"
-                      : 'Already have an account? Sign In'}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => {
-                    triggerLightHaptic();
-                    setAuthMode('options');
-                    setErrorMessage(null);
-                  }}
-                >
-                  <Text style={[styles.backToOptionsText, { color: palette.textMuted }]}>
-                    ← Back to all sign-in options
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
+            {/* Switch Mode Helper */}
+            <TouchableOpacity
+              onPress={() => {
+                triggerLightHaptic();
+                setAuthMode(authMode === 'signin' ? 'signup' : 'signin');
+                setErrorMessage(null);
+              }}
+              style={styles.switchModeTouchable}
+            >
+              <Text style={[styles.switchModeText, { color: palette.accentGreen }]}>
+                {authMode === 'signin'
+                  ? "Don't have an account? Create one"
+                  : 'Already have an account? Sign In'}
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           {/* Privacy & Sacred Trust Badge */}
           <View style={styles.trustBadge}>
             <ShieldCheck size={16} color={palette.accentGreen} style={{ marginRight: 6 }} />
             <Text style={[styles.trustText, { color: palette.textMuted }]}>
-              Your prayers, highlights, and journals are private and secure.
+              Your prayers, highlights, and notes are private and encrypted.
             </Text>
           </View>
 
@@ -413,7 +298,7 @@ export default function LoginScreen() {
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={() => Linking.openURL('mailto:selabibleapp@gmail.com?subject=Sela%20Bible%20App%20Support')}
-            style={{ alignItems: 'center', marginTop: 14, marginBottom: 8 }}
+            style={styles.supportLink}
           >
             <Text style={{ fontSize: 12, color: palette.textMuted }}>
               Need help? Email support:{' '}
@@ -434,19 +319,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 32,
     paddingBottom: 40,
-    maxWidth: 460,
+    maxWidth: 440,
     alignSelf: 'center',
     width: '100%',
   },
   brandContainer: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
   },
   logoImage: {
-    width: 90,
-    height: 90,
+    width: 88,
+    height: 88,
     borderRadius: 22,
-    marginBottom: 16,
+    marginBottom: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
@@ -463,14 +348,31 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '800',
     fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-    marginBottom: 8,
+    marginBottom: 6,
     textAlign: 'center',
   },
   subtitleText: {
-    fontSize: 14,
+    fontSize: 13,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 19,
     paddingHorizontal: 12,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 4,
+    marginBottom: 20,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 10,
+  },
+  tabButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
   },
   alertBanner: {
     flexDirection: 'row',
@@ -478,7 +380,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 12,
     borderWidth: 1,
-    marginBottom: 20,
+    marginBottom: 16,
   },
   alertText: {
     fontSize: 13,
@@ -486,87 +388,10 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 18,
   },
-  buttonStack: {
-    gap: 14,
-  },
-  guestButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 14,
-    shadowColor: '#059669',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  guestButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  guestButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  guestSubtext: {
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: -4,
-    marginBottom: 8,
-  },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 12,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-  },
-  dividerText: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1,
-    paddingHorizontal: 10,
-  },
-  secondaryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 14,
-    borderWidth: 1,
-  },
-  secondaryButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  footerLinkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 16,
-  },
   formCard: {
     padding: 20,
     borderRadius: 18,
     borderWidth: 1,
-  },
-  formHeader: {
-    marginBottom: 20,
-  },
-  formTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  formSubtitle: {
-    fontSize: 13,
-    lineHeight: 18,
   },
   inputGroup: {
     marginBottom: 16,
@@ -599,35 +424,37 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 14,
     borderRadius: 12,
-    marginTop: 8,
-    marginBottom: 16,
+    marginTop: 6,
+    marginBottom: 14,
   },
   submitButtonText: {
     color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '700',
   },
-  formFooter: {
+  switchModeTouchable: {
     alignItems: 'center',
+    paddingVertical: 4,
   },
   switchModeText: {
     fontSize: 13,
     fontWeight: '600',
   },
-  backToOptionsText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
   trustBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 36,
+    marginTop: 28,
     paddingHorizontal: 16,
   },
   trustText: {
     fontSize: 11,
     textAlign: 'center',
     lineHeight: 16,
+  },
+  supportLink: {
+    alignItems: 'center',
+    marginTop: 14,
+    marginBottom: 8,
   },
 });

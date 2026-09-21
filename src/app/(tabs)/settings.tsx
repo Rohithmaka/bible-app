@@ -256,11 +256,11 @@ export default function SettingsScreen() {
 
               {/* Privacy Item 2 */}
               <View style={[styles.ruleCard, { borderColor, backgroundColor: isDark ? '#0F172A' : '#F8FAFC' }]}>
-                <Text style={styles.ruleIcon}>👤</Text>
+                <Text style={styles.ruleIcon}>🔒</Text>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.ruleTitle, { color: textColor }]}>Anonymous by Design</Text>
+                  <Text style={[styles.ruleTitle, { color: textColor }]}>Private & Secure</Text>
                   <Text style={styles.ruleDesc}>
-                    You do not need to create an account, type your real name, or give a password. You can use the app completely as a guest.
+                    Your spiritual reflections, prayers, and highlights are encrypted and tied strictly to your email account.
                   </Text>
                 </View>
               </View>
