@@ -28,6 +28,13 @@ export default function HomeScreen() {
   const isMorningDone = morningCompletedDates.includes(todayStr);
 
   useEffect(() => {
+    // Refresh Daily Scripture automatically if calendar day has changed
+    const currentScripture = useSpiritualStore.getState().todayScripture;
+    if (currentScripture.dateStr !== todayStr) {
+      const { getDailyScriptureForDate } = require('../../store/useSpiritualStore');
+      useSpiritualStore.setState({ todayScripture: getDailyScriptureForDate() });
+    }
+
     // Non-intrusively verify device permission status and sync scheduled reminders if already granted
     useReminderStore.getState().checkDevicePermissions().then((status) => {
       if (status === 'granted') {
