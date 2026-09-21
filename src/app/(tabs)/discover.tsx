@@ -38,10 +38,14 @@ export default function DiscoverScreen() {
             <Text style={styles.todayDate}>{DAILY_DEVOTIONAL.date}</Text>
             <Text style={[styles.mainHeading, { color: textColor }]}>Daily Devotion</Text>
           </View>
-          <View style={styles.streakBadge}>
+          <TouchableOpacity
+            style={styles.streakBadge}
+            onPress={() => router.push('/one-year-planner' as any)}
+            activeOpacity={0.8}
+          >
             <Flame size={18} color="#FF6B00" />
             <Text style={styles.streakText}>{dailyStreak} Day Streak</Text>
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* Verse of the Day Hero Card */}

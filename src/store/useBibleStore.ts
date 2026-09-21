@@ -123,6 +123,10 @@ export interface BibleState {
   enrollPlan: (planId: string) => void;
   togglePlanDay: (planId: string, dayNumber: number) => void;
   setDailyTimeLog: (planId: string, dayNumber: number, log: Partial<DailyTimeLog>) => void;
+  setDailyStreak: (streak: number) => void;
+  addRewardPoints: (points: number) => void;
+  setRewardPoints: (points: number) => void;
+  recalculateStreak: () => void;
 
   // Audio actions
   setAudioPlaying: (playing: boolean) => void;
@@ -142,6 +146,47 @@ const zustandStorage: StateStorage = {
     storage.delete(name);
   },
 };
+
+export function calculateFaithStreak(completedDays: number[]): number {
+  if (!completedDays || completedDays.length === 0) return 0;
+  const set = new Set(completedDays);
+
+  const now = new Date();
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  const diff = now.getTime() - startOfYear.getTime();
+  const currentDayOfYear = Math.min(365, Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24)) + 1));
+
+  let anchorDay = -1;
+  if (set.has(currentDayOfYear)) {
+    anchorDay = currentDayOfYear;
+  } else if (set.has(currentDayOfYear - 1)) {
+    anchorDay = currentDayOfYear - 1;
+  }
+
+  if (anchorDay > 0) {
+    let streak = 0;
+    for (let d = anchorDay; d >= 1; d--) {
+      if (set.has(d)) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    return streak;
+  }
+
+  const sorted = [...completedDays].sort((a, b) => a - b);
+  const maxDay = sorted[sorted.length - 1];
+  let streak = 0;
+  for (let d = maxDay; d >= 1; d--) {
+    if (set.has(d)) {
+      streak++;
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
 
 export const useBibleStore = create<BibleState>()(
   persist(
@@ -190,13 +235,13 @@ export const useBibleStore = create<BibleState>()(
         { bookId: 'JHN', bookName: 'John', chapter: 3, timestamp: Date.now() - 3600000 },
       ],
 
-      enrolledPlanIds: ['gospels-30'],
+      enrolledPlanIds: ['one-year-bible-plan', 'gospels-30'],
       completedPlanDays: {
         'gospels-30': [1, 2],
       },
-      dailyStreak: 3,
-      rewardPoints: 350,
-      unlockedAchievements: ['first_step', 'flame_3'],
+      dailyStreak: 0,
+      rewardPoints: 100,
+      unlockedAchievements: ['first_step'],
       dailyTimeLogs: {},
 
       isAudioPlaying: false,
@@ -328,15 +373,30 @@ export const useBibleStore = create<BibleState>()(
       togglePlanDay: (planId, dayNumber) => {
         set((state) => {
           const currentDays = state.completedPlanDays[planId] || [];
-          const updatedDays = currentDays.includes(dayNumber)
+          const isDone = currentDays.includes(dayNumber);
+          const updatedDays = isDone
             ? currentDays.filter((d) => d !== dayNumber)
-            : [...currentDays, dayNumber];
+            : [...currentDays, dayNumber].sort((a, b) => a - b);
+
+          const updatedPlanDays = {
+            ...state.completedPlanDays,
+            [planId]: updatedDays,
+          };
+
+          const primaryDays = planId === 'one-year-bible-plan'
+            ? updatedDays
+            : (updatedPlanDays['one-year-bible-plan'] || updatedDays);
+
+          const newStreak = calculateFaithStreak(primaryDays);
+          const currentPoints = state.rewardPoints || 0;
+          const newPoints = isDone
+            ? Math.max(0, currentPoints - 100)
+            : currentPoints + 100;
 
           return {
-            completedPlanDays: {
-              ...state.completedPlanDays,
-              [planId]: updatedDays,
-            },
+            completedPlanDays: updatedPlanDays,
+            dailyStreak: newStreak,
+            rewardPoints: newPoints,
           };
         });
       },
@@ -357,6 +417,16 @@ export const useBibleStore = create<BibleState>()(
         });
       },
 
+      setDailyStreak: (dailyStreak) => set({ dailyStreak }),
+      addRewardPoints: (points) => set((state) => ({ rewardPoints: Math.max(0, (state.rewardPoints || 0) + points) })),
+      setRewardPoints: (rewardPoints) => set({ rewardPoints }),
+      recalculateStreak: () => {
+        set((state) => {
+          const days = state.completedPlanDays['one-year-bible-plan'] || [];
+          return { dailyStreak: calculateFaithStreak(days) };
+        });
+      },
+
       setAudioPlaying: (isAudioPlaying) => set({ isAudioPlaying }),
       setPlaybackSpeed: (playbackSpeed) => set({ playbackSpeed }),
       setAudioVerseIndex: (audioVerseIndex) => set({ audioVerseIndex }),
@@ -364,6 +434,14 @@ export const useBibleStore = create<BibleState>()(
     {
       name: 'holy-bible-storage',
       storage: createJSONStorage(() => zustandStorage),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          const days = state.completedPlanDays?.['one-year-bible-plan'] || [];
+          if (days.length > 0) {
+            state.dailyStreak = calculateFaithStreak(days);
+          }
+        }
+      },
     }
   )
 );

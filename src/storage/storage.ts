@@ -47,18 +47,63 @@ function createStorage(): StorageInterface {
 
   try {
     const MMKVModule = require('react-native-mmkv');
-    const MMKVClass = MMKVModule?.MMKV || MMKVModule?.default || (typeof MMKVModule === 'function' ? MMKVModule : null);
-    if (typeof MMKVClass === 'function') {
-      const mmkv = new MMKVClass();
+    let mmkvInstance: any = null;
+
+    if (typeof MMKVModule.createMMKV === 'function') {
+      mmkvInstance = MMKVModule.createMMKV({ id: 'sela-persistent-storage' });
+    } else if (typeof MMKVModule.MMKV === 'function') {
+      mmkvInstance = new MMKVModule.MMKV();
+    } else if (typeof MMKVModule.default === 'function') {
+      mmkvInstance = new MMKVModule.default();
+    }
+
+    if (mmkvInstance) {
       return {
-        getString: (key: string) => mmkv.getString(key),
-        set: (key: string, value: string) => mmkv.set(key, value),
-        delete: (key: string) => mmkv.delete(key),
-        clearAll: () => mmkv.clearAll()
+        getString: (key: string) => {
+          try {
+            const val = mmkvInstance.getString(key);
+            if (val !== undefined && val !== null) {
+              memoryStore.set(key, val);
+              return val;
+            }
+            return memoryStore.get(key);
+          } catch (err) {
+            console.warn(`[Storage] MMKV getString error for key "${key}":`, err);
+            return memoryStore.get(key);
+          }
+        },
+        set: (key: string, value: string) => {
+          memoryStore.set(key, value);
+          try {
+            mmkvInstance.set(key, value);
+          } catch (err) {
+            console.warn(`[Storage] MMKV set error for key "${key}":`, err);
+          }
+        },
+        delete: (key: string) => {
+          memoryStore.delete(key);
+          try {
+            if (typeof mmkvInstance.remove === 'function') {
+              mmkvInstance.remove(key);
+            } else if (typeof mmkvInstance.delete === 'function') {
+              mmkvInstance.delete(key);
+            }
+          } catch (err) {
+            console.warn(`[Storage] MMKV delete error for key "${key}":`, err);
+          }
+        },
+        clearAll: () => {
+          memoryStore.clear();
+          try {
+            mmkvInstance.clearAll();
+          } catch (err) {
+            console.warn('[Storage] MMKV clearAll error:', err);
+          }
+        }
       };
     }
   } catch (e) {
-    console.warn('MMKV initialization fallback to in-memory store:', e);
+    console.warn('[Storage] MMKV initialization error, using memory store:', e);
   }
 
   return inMemoryStorage;

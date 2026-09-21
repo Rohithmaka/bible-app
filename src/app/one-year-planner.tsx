@@ -10,8 +10,8 @@ import {
   Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, useRouter } from 'expo-router';
-import { useBibleStore } from '../store/useBibleStore';
+import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
+import { useBibleStore, calculateFaithStreak } from '../store/useBibleStore';
 import { SpiritualTheme } from '../constants/spiritualTheme';
 import {
   getReadingForDay,
@@ -48,6 +48,7 @@ import {
 } from 'lucide-react-native';
 
 type ViewMode = 'daily' | 'spreadsheet' | 'analytics';
+type QuarterFilter = 'all' | 'q1' | 'q2' | 'q3' | 'q4';
 
 const DEVOTIONAL_VERSES = [
   { verse: "Thy word is a lamp unto my feet, and a light unto my path.", reference: "Psalm 119:105" },
@@ -59,6 +60,7 @@ const DEVOTIONAL_VERSES = [
 
 export default function OneYearPlannerScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ mode?: string }>();
   const {
     themeMode,
     setLocation,
@@ -66,7 +68,10 @@ export default function OneYearPlannerScreen() {
     togglePlanDay,
     dailyTimeLogs,
     setDailyTimeLog,
+    dailyStreak,
+    setDailyStreak,
     rewardPoints,
+    addRewardPoints,
   } = useBibleStore();
 
   const isDark = themeMode === 'dark';
@@ -74,9 +79,12 @@ export default function OneYearPlannerScreen() {
 
   const currentYearDay = getCurrentYearDayNumber();
   const [selectedDay, setSelectedDay] = useState(currentYearDay);
-  const [viewMode, setViewMode] = useState<ViewMode>('daily');
+  const initialMode: ViewMode = params.mode === 'spreadsheet' ? 'spreadsheet' : params.mode === 'analytics' ? 'analytics' : 'daily';
+  const [viewMode, setViewMode] = useState<ViewMode>(initialMode);
   const [spreadsheetSearch, setSpreadsheetSearch] = useState('');
   const [filterMode, setFilterMode] = useState<'all' | 'completed' | 'pending'>('all');
+  const initialQuarter: QuarterFilter = currentYearDay <= 90 ? 'q1' : currentYearDay <= 180 ? 'q2' : currentYearDay <= 270 ? 'q3' : 'q4';
+  const [quarterFilter, setQuarterFilter] = useState<QuarterFilter>(initialQuarter);
 
   // Reward Modal state
   const [isRewardModalOpen, setIsRewardModalOpen] = useState(false);
@@ -97,24 +105,8 @@ export default function OneYearPlannerScreen() {
   // Devotional verse based on day
   const dailyDevotional = DEVOTIONAL_VERSES[selectedDay % DEVOTIONAL_VERSES.length];
 
-  // STREAK FORMULA CALCULATION
-  const calculateStreak = () => {
-    if (completedDaysArray.length === 0) return 0;
-    const sorted = [...completedDaysArray].sort((a, b) => a - b);
-    const set = new Set(sorted);
-    const maxDay = Math.max(...sorted);
-    let streak = 0;
-    for (let d = maxDay; d >= 1; d--) {
-      if (set.has(d)) {
-        streak++;
-      } else {
-        break;
-      }
-    }
-    return streak;
-  };
-
-  const currentStreak = calculateStreak();
+  // STREAK CALCULATION
+  const currentStreak = calculateFaithStreak(completedDaysArray);
 
   // Helper for daily time logs
   const getDayLog = (dayNum: number) => {
@@ -129,8 +121,8 @@ export default function OneYearPlannerScreen() {
 
     if (!isCurrentlyDone) {
       // Calculate updated streak & rewards
-      const updatedCount = completedDaysArray.length + 1;
-      const newStreak = currentStreak + 1;
+      const updatedDays = [...completedDaysArray, dayNum];
+      const newStreak = calculateFaithStreak(updatedDays);
       let pts = 100; // Base 100 points
       let milestone = '';
 
@@ -140,6 +132,11 @@ export default function OneYearPlannerScreen() {
       else if (newStreak === 14) { pts += 350; milestone = 'Shield of Truth 🛡️'; }
       else if (newStreak === 30) { pts += 1000; milestone = 'Pillar of Grace 🏛️'; }
       else if (newStreak === 100) { pts += 2500; milestone = 'Crown of Life 👑'; }
+
+      setDailyStreak(newStreak);
+      if (pts > 100) {
+        addRewardPoints(pts - 100);
+      }
 
       setRewardDetails({
         streakCount: newStreak,
@@ -207,7 +204,7 @@ export default function OneYearPlannerScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: palette.accentGreenLight, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 14 }}>
             <Sparkles size={14} color={palette.accentGreen} />
             <Text style={{ fontSize: 12, fontWeight: '800', color: palette.accentGreen }}>
-              {totalCompletedCount * 100 + currentStreak * 25} Grace Pts
+              {rewardPoints} Grace Pts
             </Text>
           </View>
         </View>
@@ -550,6 +547,41 @@ export default function OneYearPlannerScreen() {
             </View>
           </View>
 
+          {/* QUARTER NAVIGATOR TABS */}
+          <View style={{ flexDirection: 'row', backgroundColor: palette.card, paddingHorizontal: 16, paddingBottom: 10, gap: 6 }}>
+            {[
+              { id: 'q1', label: 'Q1 (1–90)' },
+              { id: 'q2', label: 'Q2 (91–180)' },
+              { id: 'q3', label: 'Q3 (181–270)' },
+              { id: 'q4', label: 'Q4 (271–365)' },
+              { id: 'all', label: 'All 365' },
+            ].map((q) => {
+              const isActive = quarterFilter === q.id;
+              return (
+                <TouchableOpacity
+                  key={q.id}
+                  onPress={() => {
+                    triggerLightHaptic();
+                    setQuarterFilter(q.id as QuarterFilter);
+                  }}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 6,
+                    borderRadius: 8,
+                    backgroundColor: isActive ? palette.accentGold : palette.inputBg,
+                    borderWidth: 1,
+                    borderColor: isActive ? palette.accentGold : palette.border,
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{ fontSize: 10.5, fontWeight: '800', color: isActive ? '#FFFFFF' : palette.textSecondary }}>
+                    {q.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
           {/* SPREADSHEET TABLE HEADER */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
             <View style={{ minWidth: 720 }}>
@@ -568,6 +600,12 @@ export default function OneYearPlannerScreen() {
               <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={true}>
                 {Array.from({ length: 365 }, (_, i) => i + 1)
                   .filter((dayNum) => {
+                    if (!spreadsheetSearch.trim()) {
+                      if (quarterFilter === 'q1' && (dayNum < 1 || dayNum > 90)) return false;
+                      if (quarterFilter === 'q2' && (dayNum < 91 || dayNum > 180)) return false;
+                      if (quarterFilter === 'q3' && (dayNum < 181 || dayNum > 270)) return false;
+                      if (quarterFilter === 'q4' && (dayNum < 271 || dayNum > 365)) return false;
+                    }
                     const isDone = completedDaysArray.includes(dayNum);
                     if (filterMode === 'completed' && !isDone) return false;
                     if (filterMode === 'pending' && isDone) return false;
@@ -583,7 +621,6 @@ export default function OneYearPlannerScreen() {
                       dayReading.proverb.displayText.toLowerCase().includes(q)
                     );
                   })
-                  .slice(0, 100) // Render up to 100 rows per view for max speed
                   .map((dayNum) => {
                     const isDone = completedDaysArray.includes(dayNum);
                     const isToday = dayNum === currentYearDay;
