@@ -12,7 +12,7 @@ import { BookOpen, Heart, Sparkles, ArrowRight, Share2, CheckCircle2 } from 'luc
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { themeMode } = useBibleStore();
+  const { themeMode, dailyStreak } = useBibleStore();
   const isDark = themeMode === 'dark';
   const palette = isDark ? SpiritualTheme.dark : SpiritualTheme.light;
 
@@ -91,6 +91,29 @@ export default function HomeScreen() {
                 </Text>
               </View>
             </View>
+
+            <TouchableOpacity
+              onPress={() => {
+                triggerLightHaptic();
+                router.push('/one-year-planner' as any);
+              }}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 5,
+                backgroundColor: 'rgba(217, 119, 6, 0.14)',
+                borderWidth: 1,
+                borderColor: 'rgba(217, 119, 6, 0.3)',
+                paddingHorizontal: 10,
+                paddingVertical: 5,
+                borderRadius: 16,
+              }}
+            >
+              <Text style={{ fontSize: 12 }}>🔥</Text>
+              <Text style={{ fontSize: 12, fontWeight: '800', color: palette.accentGold }}>
+                {dailyStreak}d
+              </Text>
+            </TouchableOpacity>
           </View>
 
           <Text style={{ fontSize: 26, fontWeight: '800', color: palette.textPrimary, marginTop: 2 }}>
