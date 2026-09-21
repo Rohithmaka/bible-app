@@ -45,12 +45,12 @@ export default function PlannerScreen() {
           </Text>
         </View>
 
-        {/* QUICK SPREADSHEET & ANALYTICAL VIEW NAVIGATION ROW */}
+        {/* QUICK CALENDAR & ANALYTICAL VIEW NAVIGATION ROW */}
         <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
           <TouchableOpacity
             onPress={() => {
               triggerLightHaptic();
-              router.push('/one-year-planner' as any);
+              router.push({ pathname: '/one-year-planner', params: { mode: 'spreadsheet' } } as any);
             }}
             activeOpacity={0.88}
             style={{
@@ -66,11 +66,11 @@ export default function PlannerScreen() {
             }}
           >
             <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(217, 119, 6, 0.15)', justifyContent: 'center', alignItems: 'center' }}>
-              <Table size={20} color={palette.accentGold} />
+              <Calendar size={20} color={palette.accentGold} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 14, fontWeight: '800', color: palette.textPrimary }}>Spreadsheet</Text>
-              <Text style={{ fontSize: 11, color: palette.textSecondary, marginTop: 1 }}>Grid Tracker</Text>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: palette.textPrimary }}>Calendar</Text>
+              <Text style={{ fontSize: 11, color: palette.textSecondary, marginTop: 1 }}>Daily Marked Work</Text>
             </View>
           </TouchableOpacity>
 

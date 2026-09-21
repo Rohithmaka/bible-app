@@ -45,10 +45,39 @@ import {
   ShieldCheck,
   Sun,
   Feather,
+  Check,
+  AlertCircle,
 } from 'lucide-react-native';
 
 type ViewMode = 'daily' | 'spreadsheet' | 'analytics';
 type QuarterFilter = 'all' | 'q1' | 'q2' | 'q3' | 'q4';
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+const MONTH_SHORT_NAMES = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+];
+
+const WEEKDAY_NAMES = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+
+function getPlanDayForMonthDate(year: number, month: number, dayOfMonth: number): number {
+  const date = new Date(year, month, dayOfMonth);
+  const start = new Date(year, 0, 0);
+  const diff = (date.getTime() - start.getTime()) + ((start.getTimezoneOffset() - date.getTimezoneOffset()) * 60 * 1000);
+  return Math.min(365, Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24))));
+}
+
+function getDateDetailsForDay(dayNumber: number, year: number = new Date().getFullYear()) {
+  const date = new Date(year, 0, dayNumber);
+  const monthName = date.toLocaleString('en-US', { month: 'long' });
+  const dayOfMonth = date.getDate();
+  const weekdayName = date.toLocaleString('en-US', { weekday: 'long' });
+  return { monthName, dayOfMonth, weekdayName, year };
+}
 
 const DEVOTIONAL_VERSES = [
   { verse: "Thy word is a lamp unto my feet, and a light unto my path.", reference: "Psalm 119:105" },
@@ -85,6 +114,40 @@ export default function OneYearPlannerScreen() {
   const [filterMode, setFilterMode] = useState<'all' | 'completed' | 'pending'>('all');
   const initialQuarter: QuarterFilter = currentYearDay <= 90 ? 'q1' : currentYearDay <= 180 ? 'q2' : currentYearDay <= 270 ? 'q3' : 'q4';
   const [quarterFilter, setQuarterFilter] = useState<QuarterFilter>(initialQuarter);
+
+  // Calendar Format States
+  const now = new Date();
+  const [calendarMonth, setCalendarMonth] = useState(now.getMonth());
+  const [calendarYear, setCalendarYear] = useState(now.getFullYear());
+  const [calendarSubMode, setCalendarSubMode] = useState<'calendar' | 'table'>('calendar');
+
+  const handlePrevMonth = () => {
+    triggerLightHaptic();
+    if (calendarMonth === 0) {
+      setCalendarMonth(11);
+      setCalendarYear((prev) => prev - 1);
+    } else {
+      setCalendarMonth((prev) => prev - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    triggerLightHaptic();
+    if (calendarMonth === 11) {
+      setCalendarMonth(0);
+      setCalendarYear((prev) => prev + 1);
+    } else {
+      setCalendarMonth((prev) => prev + 1);
+    }
+  };
+
+  const handleJumpToToday = () => {
+    triggerLightHaptic();
+    const today = new Date();
+    setCalendarMonth(today.getMonth());
+    setCalendarYear(today.getFullYear());
+    setSelectedDay(currentYearDay);
+  };
 
   // Reward Modal state
   const [isRewardModalOpen, setIsRewardModalOpen] = useState(false);
@@ -246,9 +309,9 @@ export default function OneYearPlannerScreen() {
               viewMode === 'spreadsheet' && { backgroundColor: palette.card, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.15 },
             ]}
           >
-            <Table size={15} color={viewMode === 'spreadsheet' ? palette.accentGreen : palette.textSecondary} />
+            <Calendar size={15} color={viewMode === 'spreadsheet' ? palette.accentGreen : palette.textSecondary} />
             <Text style={[styles.segmentText, { color: viewMode === 'spreadsheet' ? palette.textPrimary : palette.textSecondary, fontWeight: viewMode === 'spreadsheet' ? '800' : '600' }]}>
-              Sacred Grid
+              Calendar Grid
             </Text>
           </TouchableOpacity>
 
@@ -514,73 +577,521 @@ export default function OneYearPlannerScreen() {
         </ScrollView>
       )}
 
-      {/* VIEW MODE 2: SACRED SPREADSHEET GRID VIEW */}
+      {/* VIEW MODE 2: SACRED CALENDAR & SPREADSHEET VIEW */}
       {viewMode === 'spreadsheet' && (
         <View style={{ flex: 1 }}>
-          {/* Search & Filter Bar */}
-          <View style={{ paddingHorizontal: 16, paddingVertical: 10, backgroundColor: palette.card, borderBottomWidth: 1, borderBottomColor: palette.border, flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: palette.inputBg, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: palette.border }}>
-              <Search size={16} color={palette.textSecondary} style={{ marginRight: 6 }} />
-              <TextInput
-                style={{ flex: 1, fontSize: 13, color: palette.textPrimary }}
-                placeholder="Search day or passage (e.g. Day 263, Job)..."
-                placeholderTextColor={palette.textSecondary}
-                value={spreadsheetSearch}
-                onChangeText={setSpreadsheetSearch}
-              />
-            </View>
-
-            <View style={{ flexDirection: 'row', gap: 4 }}>
+          {/* Format Toggle Bar: Calendar vs Table */}
+          <View style={{ flexDirection: 'row', backgroundColor: palette.card, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: palette.border, justifyContent: 'space-between', alignItems: 'center' }}>
+            <View style={{ flexDirection: 'row', backgroundColor: palette.inputBg, borderRadius: 10, padding: 3, flex: 1, marginRight: 10 }}>
               <TouchableOpacity
-                onPress={() => setFilterMode('all')}
-                style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, backgroundColor: filterMode === 'all' ? palette.accentGold : palette.inputBg }}
+                onPress={() => {
+                  triggerLightHaptic();
+                  setCalendarSubMode('calendar');
+                }}
+                style={{
+                  flex: 1,
+                  paddingVertical: 7,
+                  borderRadius: 8,
+                  alignItems: 'center',
+                  backgroundColor: calendarSubMode === 'calendar' ? palette.card : 'transparent',
+                  elevation: calendarSubMode === 'calendar' ? 2 : 0,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.1,
+                }}
               >
-                <Text style={{ fontSize: 11, fontWeight: '800', color: filterMode === 'all' ? '#FFF' : palette.textSecondary }}>All</Text>
+                <Text style={{ fontSize: 12, fontWeight: '800', color: calendarSubMode === 'calendar' ? palette.accentGreen : palette.textSecondary }}>
+                  📅 Calendar Format
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={() => setFilterMode('completed')}
-                style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, backgroundColor: filterMode === 'completed' ? palette.accentGreen : palette.inputBg }}
+                onPress={() => {
+                  triggerLightHaptic();
+                  setCalendarSubMode('table');
+                }}
+                style={{
+                  flex: 1,
+                  paddingVertical: 7,
+                  borderRadius: 8,
+                  alignItems: 'center',
+                  backgroundColor: calendarSubMode === 'table' ? palette.card : 'transparent',
+                  elevation: calendarSubMode === 'table' ? 2 : 0,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.1,
+                }}
               >
-                <Text style={{ fontSize: 11, fontWeight: '800', color: filterMode === 'completed' ? '#FFF' : palette.textSecondary }}>Done ✓</Text>
+                <Text style={{ fontSize: 12, fontWeight: '800', color: calendarSubMode === 'table' ? palette.accentGold : palette.textSecondary }}>
+                  📋 Spreadsheet Table
+                </Text>
               </TouchableOpacity>
             </View>
+
+            {calendarSubMode === 'calendar' && (
+              <TouchableOpacity
+                onPress={handleJumpToToday}
+                style={{ backgroundColor: 'rgba(217, 119, 6, 0.15)', borderWidth: 1, borderColor: palette.accentGold, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}
+              >
+                <Text style={{ fontSize: 11, fontWeight: '800', color: palette.accentGold }}>Today</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
-          {/* QUARTER NAVIGATOR TABS */}
-          <View style={{ flexDirection: 'row', backgroundColor: palette.card, paddingHorizontal: 16, paddingBottom: 10, gap: 6 }}>
-            {[
-              { id: 'q1', label: 'Q1 (1–90)' },
-              { id: 'q2', label: 'Q2 (91–180)' },
-              { id: 'q3', label: 'Q3 (181–270)' },
-              { id: 'q4', label: 'Q4 (271–365)' },
-              { id: 'all', label: 'All 365' },
-            ].map((q) => {
-              const isActive = quarterFilter === q.id;
-              return (
-                <TouchableOpacity
-                  key={q.id}
-                  onPress={() => {
-                    triggerLightHaptic();
-                    setQuarterFilter(q.id as QuarterFilter);
-                  }}
-                  style={{
-                    flex: 1,
-                    paddingVertical: 6,
-                    borderRadius: 8,
-                    backgroundColor: isActive ? palette.accentGold : palette.inputBg,
-                    borderWidth: 1,
-                    borderColor: isActive ? palette.accentGold : palette.border,
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text style={{ fontSize: 10.5, fontWeight: '800', color: isActive ? '#FFFFFF' : palette.textSecondary }}>
-                    {q.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          {/* CALENDAR FORMAT VIEW */}
+          {calendarSubMode === 'calendar' && (() => {
+            const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+            const firstDayIndex = new Date(calendarYear, calendarMonth, 1).getDay();
+            const monthCompletedCount = Array.from({ length: daysInMonth }, (_, i) => i + 1).filter((d) => {
+              const pDay = getPlanDayForMonthDate(calendarYear, calendarMonth, d);
+              return completedDaysArray.includes(pDay);
+            }).length;
+            const isTodayDone = completedDaysArray.includes(currentYearDay);
+            const selectedReading = getReadingForDay(selectedDay);
+            const isSelectedDayCompleted = completedDaysArray.includes(selectedDay);
+            const isSelectedDayToday = selectedDay === currentYearDay;
+            const isSelectedDayPast = selectedDay < currentYearDay;
+            const selectedDateDetails = getDateDetailsForDay(selectedDay, calendarYear);
+
+            return (
+              <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+                {/* Month Navigator Header */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: palette.card }}>
+                  <TouchableOpacity onPress={handlePrevMonth} style={styles.navBtn}>
+                    <ChevronLeft size={22} color={palette.textPrimary} />
+                  </TouchableOpacity>
+
+                  <View style={{ alignItems: 'center' }}>
+                    <Text style={{ fontSize: 18, fontWeight: '900', color: palette.textPrimary }}>
+                      {MONTH_NAMES[calendarMonth]} {calendarYear}
+                    </Text>
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: palette.accentGold, marginTop: 1 }}>
+                      {monthCompletedCount} of {daysInMonth} Days Marked Done ({Math.round((monthCompletedCount / daysInMonth) * 100)}%)
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity onPress={handleNextMonth} style={styles.navBtn}>
+                    <ChevronRight size={22} color={palette.textPrimary} />
+                  </TouchableOpacity>
+                </View>
+
+                {/* 12-Month Quick Pill Selector Carousel */}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ backgroundColor: palette.card, borderBottomWidth: 1, borderBottomColor: palette.border, paddingHorizontal: 12, paddingBottom: 10 }}>
+                  {MONTH_SHORT_NAMES.map((name, idx) => {
+                    const isCur = calendarMonth === idx;
+                    return (
+                      <TouchableOpacity
+                        key={name}
+                        onPress={() => {
+                          triggerLightHaptic();
+                          setCalendarMonth(idx);
+                        }}
+                        style={{
+                          paddingHorizontal: 12,
+                          paddingVertical: 5,
+                          borderRadius: 8,
+                          marginRight: 6,
+                          backgroundColor: isCur ? palette.accentGold : palette.inputBg,
+                          borderWidth: 1,
+                          borderColor: isCur ? palette.accentGold : palette.border,
+                        }}
+                      >
+                        <Text style={{ fontSize: 11, fontWeight: isCur ? '900' : '600', color: isCur ? '#FFFFFF' : palette.textSecondary }}>
+                          {name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+
+                {/* TODAY WORK STATUS BANNER */}
+                <View style={{ marginHorizontal: 16, marginTop: 12, marginBottom: 8, padding: 12, borderRadius: 14, backgroundColor: isTodayDone ? (isDark ? 'rgba(16, 185, 129, 0.16)' : '#E6F4EA') : (isDark ? 'rgba(217, 119, 6, 0.14)' : '#FEF3C7'), borderWidth: 1, borderColor: isTodayDone ? palette.accentGreen : '#D97706', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, paddingRight: 8 }}>
+                    {isTodayDone ? (
+                      <CheckCircle2 size={22} color={palette.accentGreen} />
+                    ) : (
+                      <AlertCircle size={22} color="#D97706" />
+                    )}
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 13, fontWeight: '800', color: isTodayDone ? palette.accentGreen : '#D97706' }}>
+                        {isTodayDone ? "Today's Work: Marked Completed ✓" : "Today's Work: Empty / Not Done ⏳"}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: palette.textSecondary, marginTop: 1 }}>
+                        {isTodayDone ? "Great faith walk! Today's reading & devotion recorded." : "Today's reading is pending. Read & check off below to mark done!"}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {!isTodayDone && (
+                    <TouchableOpacity
+                      onPress={() => handleToggleComplete(currentYearDay)}
+                      style={{ backgroundColor: '#D97706', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: '800', color: '#FFFFFF' }}>Mark Done</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* Calendar Legend Bar */}
+                <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12, paddingVertical: 6 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <View style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: palette.accentGreen }} />
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: palette.textSecondary }}>Done ✓</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <View style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: '#D97706' }} />
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: palette.textSecondary }}>Today (Empty)</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <View style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: '#E11D48' }} />
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: palette.textSecondary }}>Past (Not Done)</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <View style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: palette.inputBg, borderWidth: 1, borderColor: palette.border }} />
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: palette.textSecondary }}>Upcoming</Text>
+                  </View>
+                </View>
+
+                {/* Weekday Row Header */}
+                <View style={{ flexDirection: 'row', paddingHorizontal: 10, paddingVertical: 8, backgroundColor: isDark ? '#171412' : '#F9F6F0', borderTopWidth: 1, borderBottomWidth: 1, borderColor: palette.border }}>
+                  {WEEKDAY_NAMES.map((wName) => (
+                    <View key={wName} style={{ width: '14.28%', alignItems: 'center' }}>
+                      <Text style={{ fontSize: 10.5, fontWeight: '800', color: (wName === 'SUN' || wName === 'SAT') ? palette.accentGold : palette.textSecondary }}>
+                        {wName}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+
+                {/* 7-Column Calendar Grid Cells */}
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 8, paddingVertical: 8, backgroundColor: palette.card }}>
+                  {/* Leading empty cells */}
+                  {Array.from({ length: firstDayIndex }).map((_, idx) => (
+                    <View key={`empty-${idx}`} style={{ width: '14.28%', height: 60, padding: 2.5 }} />
+                  ))}
+
+                  {/* Day cells for this month */}
+                  {Array.from({ length: daysInMonth }).map((_, idx) => {
+                    const dNum = idx + 1;
+                    const planDay = getPlanDayForMonthDate(calendarYear, calendarMonth, dNum);
+                    const isDone = completedDaysArray.includes(planDay);
+                    const isToday = planDay === currentYearDay && calendarYear === now.getFullYear();
+                    const isPast = planDay < currentYearDay;
+                    const isSelected = selectedDay === planDay;
+
+                    return (
+                      <View key={`day-${dNum}`} style={{ width: '14.28%', padding: 2 }}>
+                        <TouchableOpacity
+                          onPress={() => {
+                            triggerLightHaptic();
+                            setSelectedDay(planDay);
+                          }}
+                          activeOpacity={0.8}
+                          style={{
+                            height: 60,
+                            borderRadius: 10,
+                            padding: 3,
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            borderWidth: isSelected ? 2 : isToday ? 1.8 : 1,
+                            borderColor: isSelected
+                              ? palette.accentGold
+                              : isToday
+                              ? (isDone ? palette.accentGreen : '#D97706')
+                              : isDone
+                              ? 'rgba(16, 185, 129, 0.4)'
+                              : isPast
+                              ? (isDark ? 'rgba(239, 68, 68, 0.25)' : '#FECDD3')
+                              : palette.border,
+                            backgroundColor: isDone
+                              ? (isDark ? 'rgba(16, 185, 129, 0.2)' : '#E6F4EA')
+                              : isToday
+                              ? (isDark ? 'rgba(217, 119, 6, 0.16)' : '#FEF3C7')
+                              : isPast
+                              ? (isDark ? 'rgba(239, 68, 68, 0.08)' : '#FFF1F2')
+                              : palette.inputBg,
+                          }}
+                        >
+                          {/* Date Number & Today Indicator Dot */}
+                          <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 2 }}>
+                            <Text style={{
+                              fontSize: 12,
+                              fontWeight: isToday || isSelected ? '900' : '700',
+                              color: isSelected ? palette.accentGold : isToday ? '#D97706' : palette.textPrimary,
+                            }}>
+                              {dNum}
+                            </Text>
+                            {isToday && (
+                              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: isDone ? palette.accentGreen : '#D97706' }} />
+                            )}
+                          </View>
+
+                          {/* Status Marking Badge */}
+                          {isDone ? (
+                            <View style={{ backgroundColor: palette.accentGreen, borderRadius: 10, paddingHorizontal: 4, paddingVertical: 1, flexDirection: 'row', alignItems: 'center', gap: 1 }}>
+                              <Check size={8} color="#FFFFFF" />
+                              <Text style={{ fontSize: 7.5, fontWeight: '900', color: '#FFFFFF' }}>DONE</Text>
+                            </View>
+                          ) : isToday ? (
+                            <View style={{ backgroundColor: '#D97706', borderRadius: 6, paddingHorizontal: 3, paddingVertical: 1 }}>
+                              <Text style={{ fontSize: 7, fontWeight: '900', color: '#FFFFFF' }}>EMPTY</Text>
+                            </View>
+                          ) : isPast ? (
+                            <View style={{ backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#FFE4E6', borderRadius: 6, paddingHorizontal: 3, paddingVertical: 1 }}>
+                              <Text style={{ fontSize: 6.5, fontWeight: '800', color: '#E11D48' }}>NOT DONE</Text>
+                            </View>
+                          ) : (
+                            <Text style={{ fontSize: 7.5, fontWeight: '600', color: palette.textMuted }}>
+                              D{planDay}
+                            </Text>
+                          )}
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })}
+                </View>
+
+                {/* SELECTED DAY INSPECTION & ONE-TAP ACTION CARD */}
+                <View style={{ paddingHorizontal: 16, paddingTop: 14 }}>
+                  <View style={{ backgroundColor: palette.card, borderRadius: 18, borderWidth: 1.5, borderColor: isSelectedDayCompleted ? palette.accentGreen : isSelectedDayToday ? palette.accentGold : palette.cardBorder, padding: 18 }}>
+                    {/* Header with Date & Status Banner */}
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                      <View style={{ flex: 1, paddingRight: 10 }}>
+                        <Text style={{ fontSize: 11, fontWeight: '800', color: palette.accentGold, textTransform: 'uppercase', letterSpacing: 1 }}>
+                          {selectedDateDetails.weekdayName.toUpperCase()} • DAY {selectedDay} OF 365
+                        </Text>
+                        <Text style={{ fontSize: 19, fontWeight: '900', color: palette.textPrimary, marginTop: 2 }}>
+                          {selectedDateDetails.monthName} {selectedDateDetails.dayOfMonth}, {selectedDateDetails.year}
+                        </Text>
+                      </View>
+
+                      {/* Status Banner */}
+                      {isSelectedDayCompleted ? (
+                        <View style={{ backgroundColor: palette.accentGreenLight, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                          <CheckCircle2 size={16} color={palette.accentGreen} />
+                          <Text style={{ fontSize: 11, fontWeight: '800', color: palette.accentGreen }}>COMPLETED ✓</Text>
+                        </View>
+                      ) : isSelectedDayToday ? (
+                        <View style={{ backgroundColor: 'rgba(217, 119, 6, 0.16)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderColor: '#D97706' }}>
+                          <AlertCircle size={15} color="#D97706" />
+                          <Text style={{ fontSize: 11, fontWeight: '800', color: '#D97706' }}>TODAY • NOT DONE</Text>
+                        </View>
+                      ) : isSelectedDayPast ? (
+                        <View style={{ backgroundColor: 'rgba(239, 68, 68, 0.12)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderColor: '#E11D48' }}>
+                          <AlertCircle size={15} color="#E11D48" />
+                          <Text style={{ fontSize: 11, fontWeight: '800', color: '#E11D48' }}>EMPTY • NOT DONE</Text>
+                        </View>
+                      ) : (
+                        <View style={{ backgroundColor: palette.inputBg, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12 }}>
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: palette.textSecondary }}>UPCOMING</Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* BIG PRIMARY COMPLETION TOGGLE BUTTON */}
+                    <TouchableOpacity
+                      onPress={() => handleToggleComplete(selectedDay)}
+                      activeOpacity={0.85}
+                      style={{
+                        backgroundColor: isSelectedDayCompleted ? (isDark ? '#1C1917' : '#F3EFE6') : palette.accentGreen,
+                        borderRadius: 14,
+                        paddingVertical: 14,
+                        paddingHorizontal: 16,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        borderWidth: isSelectedDayCompleted ? 1.5 : 0,
+                        borderColor: isSelectedDayCompleted ? palette.accentGreen : 'transparent',
+                        marginBottom: 16,
+                        elevation: isSelectedDayCompleted ? 0 : 3,
+                      }}
+                    >
+                      <CheckCircle2 size={20} color={isSelectedDayCompleted ? palette.accentGreen : '#FFFFFF'} />
+                      <Text style={{ fontSize: 15, fontWeight: '800', color: isSelectedDayCompleted ? palette.accentGreen : '#FFFFFF' }}>
+                        {isSelectedDayCompleted ? 'Completed ✓ (Tap to unmark)' : isSelectedDayToday ? '✓ Mark Today\'s Work Completed (+100 Pts)' : `✓ Mark Day ${selectedDay} Work Completed (+100 Pts)`}
+                      </Text>
+                    </TouchableOpacity>
+
+                    {/* 4 Ordered Scripture Portions */}
+                    <Text style={{ fontSize: 12, fontWeight: '800', color: palette.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.8 }}>
+                      Scripture Journey for Day {selectedDay} (1 → 4)
+                    </Text>
+
+                    <View style={{ gap: 8, marginBottom: 16 }}>
+                      {/* 1. Old Testament */}
+                      <TouchableOpacity
+                        onPress={() => handleOpenScriptureInBible(selectedReading.oldTestament)}
+                        style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: palette.inputBg, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: palette.border }}
+                      >
+                        <View style={{ flex: 1, paddingRight: 8 }}>
+                          <Text style={{ fontSize: 10, fontWeight: '800', color: palette.accentGold, textTransform: 'uppercase' }}>1. Old Testament</Text>
+                          <Text style={{ fontSize: 14, fontWeight: '700', color: palette.textPrimary, marginTop: 2 }}>{selectedReading.oldTestament.displayText}</Text>
+                        </View>
+                        <Text style={{ fontSize: 12, fontWeight: '800', color: palette.accentGold }}>Read →</Text>
+                      </TouchableOpacity>
+
+                      {/* 2. New Testament */}
+                      <TouchableOpacity
+                        onPress={() => handleOpenScriptureInBible(selectedReading.newTestament)}
+                        style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: palette.inputBg, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: palette.border }}
+                      >
+                        <View style={{ flex: 1, paddingRight: 8 }}>
+                          <Text style={{ fontSize: 10, fontWeight: '800', color: palette.accentGreen, textTransform: 'uppercase' }}>2. New Testament</Text>
+                          <Text style={{ fontSize: 14, fontWeight: '700', color: palette.textPrimary, marginTop: 2 }}>{selectedReading.newTestament.displayText}</Text>
+                        </View>
+                        <Text style={{ fontSize: 12, fontWeight: '800', color: palette.accentGreen }}>Read →</Text>
+                      </TouchableOpacity>
+
+                      {/* 3. Psalms */}
+                      <TouchableOpacity
+                        onPress={() => handleOpenScriptureInBible(selectedReading.psalm)}
+                        style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: palette.inputBg, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: palette.border }}
+                      >
+                        <View style={{ flex: 1, paddingRight: 8 }}>
+                          <Text style={{ fontSize: 10, fontWeight: '800', color: '#3498DB', textTransform: 'uppercase' }}>3. Psalms</Text>
+                          <Text style={{ fontSize: 14, fontWeight: '700', color: palette.textPrimary, marginTop: 2 }}>{selectedReading.psalm.displayText}</Text>
+                        </View>
+                        <Text style={{ fontSize: 12, fontWeight: '800', color: '#3498DB' }}>Read →</Text>
+                      </TouchableOpacity>
+
+                      {/* 4. Proverbs */}
+                      <TouchableOpacity
+                        onPress={() => handleOpenScriptureInBible(selectedReading.proverb)}
+                        style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: palette.inputBg, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: palette.border }}
+                      >
+                        <View style={{ flex: 1, paddingRight: 8 }}>
+                          <Text style={{ fontSize: 10, fontWeight: '800', color: '#9B59B6', textTransform: 'uppercase' }}>4. Proverbs</Text>
+                          <Text style={{ fontSize: 14, fontWeight: '700', color: palette.textPrimary, marginTop: 2 }}>{selectedReading.proverb.displayText}</Text>
+                        </View>
+                        <Text style={{ fontSize: 12, fontWeight: '800', color: '#9B59B6' }}>Read →</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Dedicated Time Tracking */}
+                    <Text style={{ fontSize: 12, fontWeight: '800', color: palette.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.8 }}>
+                      Dedicated Time with God — Day {selectedDay}
+                    </Text>
+
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      {/* Reading */}
+                      <View style={{ flex: 1, backgroundColor: palette.inputBg, padding: 10, borderRadius: 12, alignItems: 'center' }}>
+                        <BookOpen size={15} color={palette.accentGreen} />
+                        <Text style={{ fontSize: 10, fontWeight: '700', color: palette.textSecondary, marginTop: 3 }}>Word Study</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                          <TouchableOpacity onPress={() => adjustTime(selectedDay, 'readingMinutes', -5)}>
+                            <Minus size={13} color={palette.textSecondary} />
+                          </TouchableOpacity>
+                          <Text style={{ fontSize: 13, fontWeight: '800', color: palette.accentGreen }}>{getDayLog(selectedDay).readingMinutes}m</Text>
+                          <TouchableOpacity onPress={() => adjustTime(selectedDay, 'readingMinutes', 5)}>
+                            <Plus size={13} color={palette.accentGreen} />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+
+                      {/* Prayer */}
+                      <View style={{ flex: 1, backgroundColor: palette.inputBg, padding: 10, borderRadius: 12, alignItems: 'center' }}>
+                        <Heart size={15} color="#E11D48" />
+                        <Text style={{ fontSize: 10, fontWeight: '700', color: palette.textSecondary, marginTop: 3 }}>Prayer</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                          <TouchableOpacity onPress={() => adjustTime(selectedDay, 'prayerMinutes', -5)}>
+                            <Minus size={13} color={palette.textSecondary} />
+                          </TouchableOpacity>
+                          <Text style={{ fontSize: 13, fontWeight: '800', color: '#E11D48' }}>{getDayLog(selectedDay).prayerMinutes}m</Text>
+                          <TouchableOpacity onPress={() => adjustTime(selectedDay, 'prayerMinutes', 5)}>
+                            <Plus size={13} color="#E11D48" />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+
+                      {/* Quiet Time */}
+                      <View style={{ flex: 1, backgroundColor: palette.inputBg, padding: 10, borderRadius: 12, alignItems: 'center' }}>
+                        <Moon size={15} color="#7C3AED" />
+                        <Text style={{ fontSize: 10, fontWeight: '700', color: palette.textSecondary, marginTop: 3 }}>Reflection</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                          <TouchableOpacity onPress={() => adjustTime(selectedDay, 'quietMinutes', -5)}>
+                            <Minus size={13} color={palette.textSecondary} />
+                          </TouchableOpacity>
+                          <Text style={{ fontSize: 13, fontWeight: '800', color: '#7C3AED' }}>{getDayLog(selectedDay).quietMinutes}m</Text>
+                          <TouchableOpacity onPress={() => adjustTime(selectedDay, 'quietMinutes', 5)}>
+                            <Plus size={13} color="#7C3AED" />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              </ScrollView>
+            );
+          })()}
+
+          {/* TABLE FORMAT VIEW (FALLBACK / ALTERNATIVE SPREADSHEET VIEW) */}
+          {calendarSubMode === 'table' && (
+            <View style={{ flex: 1 }}>
+              {/* Search & Filter Bar */}
+              <View style={{ paddingHorizontal: 16, paddingVertical: 10, backgroundColor: palette.card, borderBottomWidth: 1, borderBottomColor: palette.border, flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: palette.inputBg, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: palette.border }}>
+                  <Search size={16} color={palette.textSecondary} style={{ marginRight: 6 }} />
+                  <TextInput
+                    style={{ flex: 1, fontSize: 13, color: palette.textPrimary }}
+                    placeholder="Search day or passage (e.g. Day 263, Job)..."
+                    placeholderTextColor={palette.textSecondary}
+                    value={spreadsheetSearch}
+                    onChangeText={setSpreadsheetSearch}
+                  />
+                </View>
+
+                <View style={{ flexDirection: 'row', gap: 4 }}>
+                  <TouchableOpacity
+                    onPress={() => setFilterMode('all')}
+                    style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, backgroundColor: filterMode === 'all' ? palette.accentGold : palette.inputBg }}
+                  >
+                    <Text style={{ fontSize: 11, fontWeight: '800', color: filterMode === 'all' ? '#FFF' : palette.textSecondary }}>All</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => setFilterMode('completed')}
+                    style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, backgroundColor: filterMode === 'completed' ? palette.accentGreen : palette.inputBg }}
+                  >
+                    <Text style={{ fontSize: 11, fontWeight: '800', color: filterMode === 'completed' ? '#FFF' : palette.textSecondary }}>Done ✓</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* QUARTER NAVIGATOR TABS */}
+              <View style={{ flexDirection: 'row', backgroundColor: palette.card, paddingHorizontal: 16, paddingBottom: 10, gap: 6 }}>
+                {[
+                  { id: 'q1', label: 'Q1 (1–90)' },
+                  { id: 'q2', label: 'Q2 (91–180)' },
+                  { id: 'q3', label: 'Q3 (181–270)' },
+                  { id: 'q4', label: 'Q4 (271–365)' },
+                  { id: 'all', label: 'All 365' },
+                ].map((q) => {
+                  const isActive = quarterFilter === q.id;
+                  return (
+                    <TouchableOpacity
+                      key={q.id}
+                      onPress={() => {
+                        triggerLightHaptic();
+                        setQuarterFilter(q.id as QuarterFilter);
+                      }}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 6,
+                        borderRadius: 8,
+                        backgroundColor: isActive ? palette.accentGold : palette.inputBg,
+                        borderWidth: 1,
+                        borderColor: isActive ? palette.accentGold : palette.border,
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={{ fontSize: 10.5, fontWeight: '800', color: isActive ? '#FFFFFF' : palette.textSecondary }}>
+                        {q.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
 
           {/* SPREADSHEET TABLE HEADER */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
@@ -765,6 +1276,8 @@ export default function OneYearPlannerScreen() {
           </ScrollView>
         </View>
       )}
+    </View>
+  )}
 
       {/* VIEW MODE 3: CHRIST-CENTERED GROWTH INSIGHTS */}
       {viewMode === 'analytics' && (
