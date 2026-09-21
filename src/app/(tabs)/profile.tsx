@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Switch, StyleSheet, Modal, TextInput } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Switch, StyleSheet, Modal, TextInput, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useBibleStore } from '../../store/useBibleStore';
@@ -101,6 +101,23 @@ export default function ProfileScreen() {
         contentContainerStyle={{ paddingTop: 16, paddingHorizontal: 16, paddingBottom: 40, maxWidth: 500, width: '100%', alignSelf: 'center' }}
         showsVerticalScrollIndicator={false}
       >
+        {/* SELA Brand Header */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 18, backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(5, 150, 105, 0.06)', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 16, borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(5, 150, 105, 0.12)' }}>
+          <Image
+            source={require('../../../assets/images/sela_logo.png')}
+            style={{ width: 36, height: 36, borderRadius: 10 }}
+            resizeMode="cover"
+          />
+          <View>
+            <Text style={{ fontSize: 16, fontWeight: '900', color: palette.textPrimary, letterSpacing: 2 }}>
+              SELA
+            </Text>
+            <Text style={{ fontSize: 9, fontWeight: '700', color: palette.accentGreen, letterSpacing: 0.8, textTransform: 'uppercase' }}>
+              PAUSE • PRAY • GROW • BELONG
+            </Text>
+          </View>
+        </View>
+
         {/* User Header */}
         <View style={{ alignItems: 'center', marginBottom: 20, paddingHorizontal: 8 }}>
           <TouchableOpacity
@@ -610,9 +627,19 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        <Text style={{ fontSize: 12, color: palette.textMuted, textAlign: 'center', marginTop: 24 }}>
-          Sela • Holy Bible & Spiritual Growth • Version 1.0.0
-        </Text>
+        <View style={{ alignItems: 'center', marginTop: 28, marginBottom: 12, gap: 6 }}>
+          <Image
+            source={require('../../../assets/images/sela_logo.png')}
+            style={{ width: 32, height: 32, borderRadius: 8, opacity: 0.85 }}
+            resizeMode="cover"
+          />
+          <Text style={{ fontSize: 12, color: palette.textMuted, textAlign: 'center' }}>
+            Sela • Holy Bible & Spiritual Growth • Version 1.0.0
+          </Text>
+          <Text style={{ fontSize: 10, color: palette.accentGreen, fontWeight: '700', letterSpacing: 1 }}>
+            PAUSE • PRAY • GROW • BELONG
+          </Text>
+        </View>
       </ScrollView>
 
       {/* EDIT NAME MODAL - OPTIMIZED FOR MOBILE SCREENS */}

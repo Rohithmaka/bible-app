@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useBibleStore } from '../../store/useBibleStore';
@@ -66,15 +66,30 @@ export default function HomeScreen() {
         contentContainerStyle={{ paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header Banner */}
-        <View style={{ paddingTop: 16, paddingHorizontal: 20, paddingBottom: 16 }}>
-          <Text style={{ fontSize: 13, fontWeight: '700', color: palette.accentGreen, textTransform: 'uppercase', letterSpacing: 1.2 }}>
-            Daily Spiritual Dashboard
-          </Text>
-          <Text style={{ fontSize: 28, fontWeight: '800', color: palette.textPrimary, marginTop: 2 }}>
+        {/* Header Banner with SELA Brand Identity */}
+        <View style={{ paddingTop: 14, paddingHorizontal: 20, paddingBottom: 16 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <Image
+                source={require('../../../assets/images/sela_logo.png')}
+                style={{ width: 46, height: 46, borderRadius: 14 }}
+                resizeMode="cover"
+              />
+              <View>
+                <Text style={{ fontSize: 20, fontWeight: '900', color: palette.textPrimary, letterSpacing: 2 }}>
+                  SELA
+                </Text>
+                <Text style={{ fontSize: 10, fontWeight: '700', color: palette.accentGreen, letterSpacing: 1, textTransform: 'uppercase' }}>
+                  PAUSE • PRAY • GROW • BELONG
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          <Text style={{ fontSize: 26, fontWeight: '800', color: palette.textPrimary, marginTop: 2 }}>
             {getGreeting()}, {user.displayName}
           </Text>
-          <Text style={{ fontSize: 14, color: palette.textSecondary, marginTop: 2 }}>
+          <Text style={{ fontSize: 13, color: palette.textSecondary, marginTop: 3 }}>
             "Read the Word. Understand it. Pray through it. Live it."
           </Text>
         </View>

@@ -8,6 +8,7 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -207,12 +208,17 @@ export default function OnboardingFlowScreen() {
           {/* ================= STEP 1: PERSONAL PROFILE ================= */}
           {currentStep === 1 && (
             <View>
-              <View style={styles.headerBox}>
-                <View style={[styles.iconCircle, { backgroundColor: 'rgba(5, 150, 105, 0.15)' }]}>
-                  <User size={30} color={palette.accentGreen} />
-                </View>
-                <Text style={[styles.heading, { color: palette.textPrimary }]}>Let's Get to Know You</Text>
-                <Text style={[styles.subheading, { color: palette.textSecondary }]}>
+              <View style={[styles.headerBox, { alignItems: 'center' }]}>
+                <Image
+                  source={require('../../assets/images/sela_logo.png')}
+                  style={{ width: 88, height: 88, borderRadius: 22, marginBottom: 12 }}
+                  resizeMode="cover"
+                />
+                <Text style={{ fontSize: 11, fontWeight: '800', color: palette.accentGreen, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 4 }}>
+                  PAUSE • PRAY • GROW • BELONG
+                </Text>
+                <Text style={[styles.heading, { color: palette.textPrimary, textAlign: 'center' }]}>Welcome to Sela</Text>
+                <Text style={[styles.subheading, { color: palette.textSecondary, textAlign: 'center' }]}>
                   Personalize your devotional experience, prayer journals, and community intercession.
                 </Text>
               </View>
