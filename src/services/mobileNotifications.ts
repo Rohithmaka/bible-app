@@ -145,29 +145,27 @@ export async function scheduleDailySpiritualReminders(config: NotificationSchedu
     const hasGreeting = !!userFirstName && config.personalizedGreeting !== false;
     const showSnippet = config.showVerseSnippet !== false;
 
-    // 1. Daily Bible Reading Reminder
+    // 1. Daily Devotion & Bible Reading Reminder
     if (config.bibleReadingEnabled !== false) {
       const bibleTimeStr = config.bibleReadingTime || config.morningTime || '07:00 AM';
       const bibleTime = parseHourMinute(bibleTimeStr);
       
-      const bibleTitle = hasGreeting
-        ? `📖 Good Morning ${userFirstName}! ${config.verseReference || 'Daily Bread'}`
-        : config.verseReference
-          ? `📖 Daily Bread: ${config.verseReference}`
-          : "📖 Time for Daily Bible Reading";
+      const devotionTitle = hasGreeting
+        ? `🌅 Good Morning ${userFirstName}! Your Daily Devotion is Ready`
+        : "🌅 Your Daily Devotion is Ready";
 
-      const bibleBody = showSnippet && config.verseSnippet
-        ? `"${config.verseSnippet.slice(0, 100)}..." Tap to read and meditate.`
-        : "Start your day in God's Word. Tap to open today's scripture.";
+      const devotionBody = showSnippet && config.verseSnippet
+        ? `"${config.verseSnippet.slice(0, 80)}..." Take a few quiet moments with God's Word today.`
+        : "Take a few quiet moments with God's Word today.";
 
       await registerNotificationWithTrigger(
         Notifications,
         {
-          title: bibleTitle,
-          body: bibleBody,
+          title: devotionTitle,
+          body: devotionBody,
           sound: isSound,
           vibrate: isVibrate ? [0, 250, 250, 250] : undefined,
-          data: { screen: 'home', type: 'bible_reading' },
+          data: { route: '/daily-devotion', screen: 'daily-devotion', type: 'devotional' },
         },
         bibleTime,
         activeDays

@@ -8,13 +8,21 @@ import { SpiritualTheme, ScriptureTypography, isTeluguScript } from '../../const
 import { triggerLightHaptic, triggerMediumHaptic, triggerSuccessHaptic } from '../../services/mobileHaptics';
 import { shareScriptureVerse } from '../../services/mobileShare';
 import { useReminderStore } from '../../store/useReminderStore';
-import { BookOpen, Heart, Sparkles, ArrowRight, Share2, CheckCircle2 } from 'lucide-react-native';
+import { useDevotionStore } from '../../store/useDevotionStore';
+import { BookOpen, Heart, Sparkles, ArrowRight, Share2, CheckCircle2, Flame } from 'lucide-react-native';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { themeMode, dailyStreak } = useBibleStore();
   const isDark = themeMode === 'dark';
   const palette = isDark ? SpiritualTheme.dark : SpiritualTheme.light;
+
+  const {
+    todayDevotion,
+    isCompleted: isDevotionCompleted,
+    devotionStreak,
+    loadTodayDevotion,
+  } = useDevotionStore();
 
   const {
     todayScripture,
@@ -28,6 +36,9 @@ export default function HomeScreen() {
   const isMorningDone = morningCompletedDates.includes(todayStr);
 
   useEffect(() => {
+    // Load today's devotion and sync cloud/local completion
+    loadTodayDevotion();
+
     // Refresh Daily Scripture automatically if calendar day has changed
     const currentScripture = useSpiritualStore.getState().todayScripture;
     if (currentScripture.dateStr !== todayStr) {
@@ -244,72 +255,161 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* 1. TODAY'S SCRIPTURE */}
+        {/* 🌅 DAILY DEVOTION CARD */}
         <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
-          <View style={{ backgroundColor: palette.card, borderRadius: 18, borderWidth: 1, borderColor: palette.cardBorder, padding: 20 }}>
+          <View
+            style={{
+              backgroundColor: palette.card,
+              borderRadius: 20,
+              borderWidth: 1,
+              borderColor: isDevotionCompleted ? palette.accentGreen : palette.cardBorder,
+              padding: 20,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.06,
+              shadowRadius: 10,
+              elevation: 3,
+            }}
+          >
+            {/* Devotion Card Header */}
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <Text style={{ fontSize: 12, fontWeight: '700', color: palette.accentGold, textTransform: 'uppercase', letterSpacing: 1 }}>
-                Today's Scripture
-              </Text>
-              <View style={{ backgroundColor: palette.accentGreenLight, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
-                <Text style={{ fontSize: 11, fontWeight: '700', color: palette.accentGreen }}>
-                  {todayScripture.translation}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={{ fontSize: 12, fontWeight: '800', color: '#D97706', letterSpacing: 1 }}>
+                  🌅 DAILY DEVOTION
                 </Text>
+              </View>
+
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                {devotionStreak > 0 && (
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 4,
+                      backgroundColor: 'rgba(217, 119, 6, 0.12)',
+                      paddingHorizontal: 8,
+                      paddingVertical: 3,
+                      borderRadius: 12,
+                    }}
+                  >
+                    <Flame size={12} color="#D97706" />
+                    <Text style={{ fontSize: 11, fontWeight: '800', color: '#D97706' }}>
+                      {devotionStreak}d Streak
+                    </Text>
+                  </View>
+                )}
+
+                <View style={{ backgroundColor: palette.accentGreenLight, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: palette.accentGreen }}>
+                    {todayDevotion.verseTranslation || 'KJV'}
+                  </Text>
+                </View>
               </View>
             </View>
 
+            {/* Scripture Verse Quote */}
             <Text
               style={{
-                fontFamily: isTeluguScript(todayScripture.verseText)
+                fontFamily: isTeluguScript(todayDevotion.verseText)
                   ? (Platform.OS === 'android' ? 'Mandali-Bold' : 'Mandali')
                   : ScriptureTypography.fontFamilySerif,
-                fontWeight: isTeluguScript(todayScripture.verseText) ? '700' : '400',
-                fontStyle: isTeluguScript(todayScripture.verseText) ? 'normal' : 'italic',
-                fontSize: ScriptureTypography.fontSize.lg,
-                lineHeight: ScriptureTypography.fontSize.lg * ScriptureTypography.lineHeightRatio,
+                fontWeight: isTeluguScript(todayDevotion.verseText) ? '700' : '400',
+                fontStyle: isTeluguScript(todayDevotion.verseText) ? 'normal' : 'italic',
+                fontSize: 17,
+                lineHeight: 26,
                 color: palette.textPrimary,
+                marginBottom: 8,
+              }}
+            >
+              "{todayDevotion.verseText}"
+            </Text>
+
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: '700',
+                color: palette.accentGreen,
+                marginBottom: 14,
+              }}
+            >
+              — {todayDevotion.verseReference}
+            </Text>
+
+            {/* Devotion Title & 2-Line Preview */}
+            <View
+              style={{
+                backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+                borderRadius: 14,
+                padding: 14,
+                marginBottom: 16,
+                borderLeftWidth: 3,
+                borderLeftColor: '#D97706',
+              }}
+            >
+              <Text style={{ fontSize: 16, fontWeight: '800', color: palette.textPrimary, marginBottom: 4 }}>
+                {todayDevotion.title}
+              </Text>
+              <Text style={{ fontSize: 13, lineHeight: 20, color: palette.textSecondary }} numberOfLines={2}>
+                {todayDevotion.devotion}
+              </Text>
+            </View>
+
+            {/* Primary Action Button: Read Today's Devotion */}
+            <TouchableOpacity
+              onPress={() => {
+                triggerLightHaptic();
+                router.push('/daily-devotion');
+              }}
+              activeOpacity={0.85}
+              style={{
+                backgroundColor: isDevotionCompleted ? palette.accentGreenLight : '#D97706',
+                borderWidth: isDevotionCompleted ? 1 : 0,
+                borderColor: palette.accentGreen,
+                paddingVertical: 14,
+                borderRadius: 14,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
                 marginBottom: 12,
               }}
             >
-              "{todayScripture.verseText}"
-            </Text>
-
-            <Text
-              style={{
-                fontFamily: isTeluguScript(todayScripture.reference)
-                  ? (Platform.OS === 'android' ? 'Mandali-Bold' : 'Mandali')
-                  : undefined,
-                fontSize: 15,
-                fontWeight: '700',
-                color: palette.accentGreen,
-                marginBottom: 16,
-              }}
-            >
-              — {todayScripture.reference}
-            </Text>
+              {isDevotionCompleted ? (
+                <>
+                  <CheckCircle2 size={18} color={palette.accentGreen} />
+                  <Text style={{ fontSize: 15, fontWeight: '800', color: palette.accentGreen }}>
+                    ✓ Completed Today • Revisit Devotion
+                  </Text>
+                  <ArrowRight size={16} color={palette.accentGreen} />
+                </>
+              ) : (
+                <>
+                  <Text style={{ fontSize: 15, fontWeight: '800', color: '#FFFFFF' }}>
+                    Read Today's Devotion
+                  </Text>
+                  <ArrowRight size={16} color="#FFFFFF" />
+                </>
+              )}
+            </TouchableOpacity>
 
             {/* Quick Action Buttons */}
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingTop: 12, borderTopWidth: 1, borderTopColor: palette.border }}>
+            <View style={{ flexDirection: 'row', gap: 8, paddingTop: 10, borderTopWidth: 1, borderTopColor: palette.border }}>
               <TouchableOpacity
                 onPress={() => {
                   triggerLightHaptic();
-                  router.push({ pathname: '/bible' as any, params: { bookId: todayScripture.bookId, chapter: todayScripture.chapter } });
+                  if (todayDevotion.bookId && todayDevotion.chapter) {
+                    router.push({
+                      pathname: '/bible' as any,
+                      params: { bookId: todayDevotion.bookId, chapter: todayDevotion.chapter },
+                    });
+                  } else {
+                    router.push('/bible' as any);
+                  }
                 }}
-                style={[styles.actionBtn, { backgroundColor: palette.inputBg }]}
+                style={[styles.actionBtn, { backgroundColor: palette.inputBg, flex: 1 }]}
               >
                 <BookOpen size={14} color={palette.textPrimary} />
-                <Text style={[styles.actionBtnText, { color: palette.textPrimary }]}>Read</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => {
-                  triggerLightHaptic();
-                  router.push({ pathname: '/study-workspace' as any, params: { bookId: todayScripture.bookId, chapter: todayScripture.chapter, verse: todayScripture.verse } });
-                }}
-                style={[styles.actionBtn, { backgroundColor: palette.accentGreenLight }]}
-              >
-                <Sparkles size={14} color={palette.accentGreen} />
-                <Text style={[styles.actionBtnText, { color: palette.accentGreen }]}>Study</Text>
+                <Text style={[styles.actionBtnText, { color: palette.textPrimary }]}>Read Bible</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -317,68 +417,27 @@ export default function HomeScreen() {
                   triggerMediumHaptic();
                   router.push('/pray-now' as any);
                 }}
-                style={[styles.actionBtn, { backgroundColor: palette.accentGoldLight }]}
+                style={[styles.actionBtn, { backgroundColor: palette.inputBg, flex: 1 }]}
               >
                 <Heart size={14} color={palette.accentGold} />
                 <Text style={[styles.actionBtnText, { color: palette.accentGold }]}>Pray</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={handleShare}
-                style={[styles.actionBtn, { backgroundColor: palette.inputBg }]}
+                onPress={async () => {
+                  triggerLightHaptic();
+                  await shareScriptureVerse(
+                    todayDevotion.verseReference,
+                    todayDevotion.verseText,
+                    todayDevotion.verseTranslation
+                  );
+                }}
+                style={[styles.actionBtn, { backgroundColor: palette.inputBg, flex: 1 }]}
               >
                 <Share2 size={14} color={palette.textSecondary} />
                 <Text style={[styles.actionBtnText, { color: palette.textSecondary }]}>Share</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
-
-        {/* 2. UNDERSTAND */}
-        <View style={{ paddingHorizontal: 20, marginBottom: 18 }}>
-          <View style={{ backgroundColor: palette.card, borderRadius: 16, borderWidth: 1, borderColor: palette.cardBorder, padding: 18 }}>
-            <Text style={{ fontSize: 12, fontWeight: '700', color: palette.accentGreen, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
-              Understand
-            </Text>
-            <Text style={{ fontSize: 15, lineHeight: 22, color: palette.textPrimary }}>
-              {todayScripture.understand}
-            </Text>
-          </View>
-        </View>
-
-        {/* 3. REFLECT */}
-        <View style={{ paddingHorizontal: 20, marginBottom: 18 }}>
-          <View style={{ backgroundColor: palette.card, borderRadius: 16, borderWidth: 1, borderColor: palette.cardBorder, padding: 18 }}>
-            <Text style={{ fontSize: 12, fontWeight: '700', color: palette.accentGold, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
-              Reflect
-            </Text>
-            <Text style={{ fontSize: 16, fontWeight: '600', lineHeight: 24, color: palette.textPrimary, fontStyle: 'italic' }}>
-              "{todayScripture.reflectQuestion}"
-            </Text>
-          </View>
-        </View>
-
-        {/* 4. PRAY */}
-        <View style={{ paddingHorizontal: 20, marginBottom: 18 }}>
-          <View style={{ backgroundColor: palette.card, borderRadius: 16, borderWidth: 1, borderColor: palette.cardBorder, padding: 18 }}>
-            <Text style={{ fontSize: 12, fontWeight: '700', color: palette.accentGreen, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
-              Guided Prayer
-            </Text>
-            <Text style={{ fontSize: 15, lineHeight: 23, color: palette.textSecondary }}>
-              {todayScripture.guidedPrayer}
-            </Text>
-          </View>
-        </View>
-
-        {/* 5. TODAY'S APPLICATION */}
-        <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
-          <View style={{ backgroundColor: palette.accentGreenLight, borderRadius: 16, padding: 18, borderLeftWidth: 4, borderLeftColor: palette.accentGreen }}>
-            <Text style={{ fontSize: 12, fontWeight: '700', color: palette.accentGreen, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
-              Today's Practical Application
-            </Text>
-            <Text style={{ fontSize: 15, fontWeight: '600', lineHeight: 22, color: palette.textPrimary }}>
-              {todayScripture.practicalApplication}
-            </Text>
           </View>
         </View>
 

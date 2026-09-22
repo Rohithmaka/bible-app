@@ -354,4 +354,63 @@ CREATE POLICY "Allow insert reminders" ON public.reminders FOR INSERT WITH CHECK
 CREATE POLICY "Allow update reminders" ON public.reminders FOR UPDATE USING (true);
 CREATE POLICY "Allow delete reminders" ON public.reminders FOR DELETE USING (true);
 
+-- ========================================================
+-- 10. DAILY DEVOTIONS & USER COMPLETIONS SCHEMA
+-- ========================================================
 
+-- Daily Devotions Catalog Table
+CREATE TABLE IF NOT EXISTS public.daily_devotions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  date DATE UNIQUE NOT NULL,
+  title TEXT NOT NULL,
+  verse_reference TEXT NOT NULL,
+  verse_text TEXT NOT NULL,
+  verse_translation TEXT NOT NULL DEFAULT 'KJV',
+  devotion TEXT NOT NULL,
+  reflection_question TEXT NOT NULL,
+  prayer TEXT NOT NULL,
+  daily_action TEXT NOT NULL,
+  book_id VARCHAR(10),
+  chapter INT,
+  verse INT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_daily_devotions_date ON public.daily_devotions(date);
+ALTER TABLE public.daily_devotions ENABLE ROW LEVEL SECURITY;
+
+-- Allow public read access to daily devotions
+CREATE POLICY "Allow public read daily_devotions"
+  ON public.daily_devotions FOR SELECT
+  USING (true);
+
+-- User Daily Devotion Completions & Saved Table
+CREATE TABLE IF NOT EXISTS public.user_daily_devotions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL,
+  devotion_id UUID NOT NULL REFERENCES public.daily_devotions(id) ON DELETE CASCADE,
+  completed BOOLEAN DEFAULT TRUE,
+  completed_at TIMESTAMPTZ DEFAULT NOW(),
+  saved BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, devotion_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_daily_devotions_user ON public.user_daily_devotions(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_daily_devotions_saved ON public.user_daily_devotions(user_id, saved);
+ALTER TABLE public.user_daily_devotions ENABLE ROW LEVEL SECURITY;
+
+-- RLS: Authenticated users manage their own completion and bookmark records
+CREATE POLICY "Users read own daily devotions"
+  ON public.user_daily_devotions FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users insert own daily devotions"
+  ON public.user_daily_devotions FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users update own daily devotions"
+  ON public.user_daily_devotions FOR UPDATE
+  USING (auth.uid() = user_id);

@@ -246,7 +246,7 @@ export function getDestinationRoute(dest: ReminderDestination): string {
     case 'reading_plan':
       return '/library';
     case 'verse_of_day':
-      return '/(tabs)';
+      return '/daily-devotion';
     case 'study':
       return '/study-workspace';
     case 'home':
