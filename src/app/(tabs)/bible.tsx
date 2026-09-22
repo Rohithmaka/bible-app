@@ -10,6 +10,7 @@ import {
   TextInput,
   StyleSheet,
   Platform,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -104,6 +105,10 @@ export default function BibleReaderScreen() {
   const [selectedLangCode, setSelectedLangCode] = useState<string>('en');
   const [langSearchQuery, setLangSearchQuery] = useState<string>('');
   const [isBookPickerOpen, setIsBookPickerOpen] = useState(false);
+  const [bookPickerTab, setBookPickerTab] = useState<'book' | 'chapter'>('book');
+  const [selectedPickerBookId, setSelectedPickerBookId] = useState<string>('JHN');
+  const [bookSearchQuery, setBookSearchQuery] = useState<string>('');
+  const [testamentFilter, setTestamentFilter] = useState<'ALL' | 'OT' | 'NT'>('ALL');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const [noteContent, setNoteContent] = useState('');
@@ -333,6 +338,32 @@ export default function BibleReaderScreen() {
     (t) => t.languageCode.toLowerCase() === selectedLangCode.toLowerCase() && t.active
   );
 
+  // Book & Chapter Picker Calculations
+  const openBookPicker = () => {
+    triggerLightHaptic();
+    setSelectedPickerBookId(currentBook.id);
+    setBookSearchQuery('');
+    setBookPickerTab('book');
+    setIsBookPickerOpen(true);
+  };
+
+  const selectedPickerBook = BIBLE_BOOKS.find((b) => b.id === selectedPickerBookId) || currentBook;
+
+  const filteredBibleBooks = BIBLE_BOOKS.filter((b) => {
+    if (bookSearchQuery.trim()) {
+      const q = bookSearchQuery.toLowerCase();
+      const localized = getLocalizedBookName(b.id, translation).toLowerCase();
+      return (
+        b.name.toLowerCase().includes(q) ||
+        b.abbreviation.toLowerCase().includes(q) ||
+        localized.includes(q)
+      );
+    }
+    if (testamentFilter === 'OT') return b.testament === 'OT';
+    if (testamentFilter === 'NT') return b.testament === 'NT';
+    return true;
+  });
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]}>
       {/* Top Header Controls */}
@@ -342,7 +373,7 @@ export default function BibleReaderScreen() {
           {parallelMode ? <Columns size={12} color="#D97706" style={{ marginLeft: 4 }} /> : null}
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.headerBookButton} onPress={() => setIsBookPickerOpen(true)}>
+        <TouchableOpacity style={styles.headerBookButton} onPress={openBookPicker}>
           <Text style={[styles.headerBookTitle, teluguHeaderFontStyle, { color: palette.textPrimary }]}>
             {getLocalizedBookName(currentBook.id, translation)} {currentChapter}
           </Text>
@@ -365,8 +396,8 @@ export default function BibleReaderScreen() {
 
       {/* Main Chapter Reader Content */}
       <ScrollView contentContainerStyle={styles.readerContent} showsVerticalScrollIndicator={false}>
-        {/* Chapter Header Title */}
-        <View style={styles.chapterHeaderContainer}>
+        {/* Chapter Header Title (Tappable to pick book & chapter) */}
+        <TouchableOpacity style={styles.chapterHeaderContainer} activeOpacity={0.7} onPress={openBookPicker}>
           <Text style={[styles.chapterHeaderTitle, teluguHeaderFontStyle, { color: palette.textPrimary }]}>
             {getLocalizedBookName(currentBook.id, translation)} {currentChapter}
           </Text>
@@ -378,7 +409,7 @@ export default function BibleReaderScreen() {
               </Text>
             </View>
           ) : null}
-        </View>
+        </TouchableOpacity>
 
         {isLoadingVerses ? (
           <View style={styles.loadingContainer}>
@@ -768,76 +799,252 @@ export default function BibleReaderScreen() {
         </TouchableOpacity>
       </Modal>
 
-      {/* MODAL 2: BOOK & CHAPTER PICKER - CENTERED CARD MATCHING LANGUAGE MODAL */}
-      <Modal visible={isBookPickerOpen} animationType="fade" transparent>
-        <TouchableOpacity
-          style={[styles.modalOverlay, { justifyContent: 'center', alignItems: 'center', padding: 16 }]}
-          activeOpacity={1}
-          onPress={() => setIsBookPickerOpen(false)}
-        >
+      {/* MODAL 2: BOOK & CHAPTER PICKER */}
+      <Modal visible={isBookPickerOpen} animationType="fade" transparent onRequestClose={() => setIsBookPickerOpen(false)}>
+        <View style={[styles.modalOverlay, { justifyContent: 'center', alignItems: 'center', padding: 16 }]}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setIsBookPickerOpen(false)}
+          />
           <View
             style={[
-              styles.modalContent,
+              styles.bookPickerContainer,
               {
                 backgroundColor: palette.card,
-                maxWidth: 480,
-                width: '100%',
-                alignSelf: 'center',
-                maxHeight: '85%',
-                borderRadius: 24,
-                overflow: 'hidden',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 10 },
-                shadowOpacity: 0.25,
-                shadowRadius: 20,
-                elevation: 10,
+                borderColor: palette.border,
               },
             ]}
             onStartShouldSetResponder={() => true}
           >
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: palette.textPrimary }]}>Select Book & Chapter</Text>
-              <TouchableOpacity onPress={() => setIsBookPickerOpen(false)}>
-                <X size={24} color={palette.textSecondary} />
+            {/* Modal Header */}
+            <View style={[styles.modalHeader, { borderBottomWidth: 1, borderBottomColor: palette.border, paddingBottom: 12, marginBottom: 12 }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <BookOpen size={20} color="#D97706" />
+                <Text style={[styles.modalTitle, { color: palette.textPrimary }]}>Select Scripture</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => {
+                  triggerLightHaptic();
+                  setIsBookPickerOpen(false);
+                }}
+                style={{ padding: 4 }}
+              >
+                <X size={22} color={palette.textSecondary} />
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-              {BIBLE_BOOKS.map((b) => (
-                <View key={b.id} style={[styles.bookRow, { borderBottomColor: palette.border }]}>
-                  <Text style={[styles.bookRowName, teluguHeaderFontStyle, { color: palette.textPrimary }]}>
-                    {getLocalizedBookName(b.id, translation)}
-                  </Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chapterGrid}>
-                    {Array.from({ length: b.chaptersCount }, (_, i) => i + 1).map((ch) => (
+            {/* Segmented Mode Switcher: [ Books ] [ Chapters (e.g. John) ] */}
+            <View style={styles.segmentedTabRow}>
+              <TouchableOpacity
+                style={[
+                  styles.segmentedTabBtn,
+                  { borderColor: palette.border, backgroundColor: palette.background },
+                  bookPickerTab === 'book' && styles.activeSegmentedTabBtn,
+                ]}
+                onPress={() => {
+                  triggerLightHaptic();
+                  setBookPickerTab('book');
+                }}
+              >
+                <BookOpen size={16} color={bookPickerTab === 'book' ? '#FFFFFF' : palette.textSecondary} />
+                <Text
+                  style={[
+                    styles.segmentedTabBtnText,
+                    { color: palette.textSecondary },
+                    bookPickerTab === 'book' && styles.activeSegmentedTabBtnText,
+                  ]}
+                >
+                  Books
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.segmentedTabBtn,
+                  { borderColor: palette.border, backgroundColor: palette.background },
+                  bookPickerTab === 'chapter' && styles.activeSegmentedTabBtn,
+                ]}
+                onPress={() => {
+                  triggerLightHaptic();
+                  setBookPickerTab('chapter');
+                }}
+              >
+                <Text
+                  style={[
+                    styles.segmentedTabBtnText,
+                    { color: palette.textSecondary },
+                    bookPickerTab === 'chapter' && styles.activeSegmentedTabBtnText,
+                  ]}
+                  numberOfLines={1}
+                >
+                  Chapters ({getLocalizedBookName(selectedPickerBook.id, translation)})
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {bookPickerTab === 'book' ? (
+              /* TAB 1: BOOK SELECTION */
+              <View style={{ flex: 1 }}>
+                {/* Search Bar */}
+                <View style={{ paddingHorizontal: 16, marginBottom: 10 }}>
+                  <View style={[styles.langSearchBox, { backgroundColor: palette.background, borderColor: palette.border }]}>
+                    <Search size={18} color={palette.textSecondary} style={{ marginRight: 8 }} />
+                    <TextInput
+                      style={[styles.langSearchInput, { color: palette.textPrimary }]}
+                      placeholder="Search books (e.g. John, Gen, యోహాను)..."
+                      placeholderTextColor={palette.textSecondary}
+                      value={bookSearchQuery}
+                      onChangeText={setBookSearchQuery}
+                      autoCorrect={false}
+                    />
+                    {bookSearchQuery ? (
+                      <TouchableOpacity onPress={() => setBookSearchQuery('')}>
+                        <X size={18} color={palette.textSecondary} />
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                </View>
+
+                {/* Testament Filter Pills (Shown when not actively searching) */}
+                {!bookSearchQuery.trim() && (
+                  <View style={styles.testamentPillRow}>
+                    {(['ALL', 'OT', 'NT'] as const).map((t) => (
                       <TouchableOpacity
-                        key={`${b.id}-ch-${ch}`}
+                        key={t}
                         style={[
-                          styles.chapterChip,
-                          b.id === currentBook.id && ch === currentChapter && styles.activeChapterChip,
+                          styles.testamentPill,
+                          { borderColor: palette.border, backgroundColor: palette.background },
+                          testamentFilter === t && styles.activeTestamentPill,
                         ]}
                         onPress={() => {
-                          setLocation(b.id, ch);
+                          triggerLightHaptic();
+                          setTestamentFilter(t);
+                        }}
+                      >
+                        <Text
+                          style={[
+                            styles.testamentPillText,
+                            { color: palette.textSecondary },
+                            testamentFilter === t && styles.activeTestamentPillText,
+                          ]}
+                        >
+                          {t === 'ALL' ? 'All (66)' : t === 'OT' ? 'Old Testament (39)' : 'New Testament (27)'}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+
+                {/* Scrollable Books List */}
+                <ScrollView style={styles.booksList} showsVerticalScrollIndicator={true}>
+                  {filteredBibleBooks.map((b) => {
+                    const isSelected = selectedPickerBook.id === b.id;
+                    const localizedName = getLocalizedBookName(b.id, translation);
+                    const isTelugu = isTeluguLanguage || isTeluguScript(localizedName);
+
+                    return (
+                      <TouchableOpacity
+                        key={b.id}
+                        style={[
+                          styles.bookCardItem,
+                          {
+                            borderColor: isSelected ? '#D97706' : palette.border,
+                            backgroundColor: isSelected ? 'rgba(217, 119, 6, 0.12)' : palette.background,
+                          },
+                        ]}
+                        onPress={() => {
+                          triggerLightHaptic();
+                          setSelectedPickerBookId(b.id);
+                          setBookPickerTab('chapter');
+                        }}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text
+                            style={[
+                              styles.bookCardName,
+                              isTelugu ? { fontFamily: Platform.OS === 'android' ? 'Mandali-Bold' : 'Mandali', fontWeight: '700' } : undefined,
+                              { color: isSelected ? '#D97706' : palette.textPrimary },
+                            ]}
+                          >
+                            {localizedName}
+                          </Text>
+                          <Text style={[styles.bookCardSubtext, { color: palette.textSecondary }]}>
+                            {b.name !== localizedName ? `${b.name} • ` : ''}
+                            {b.chaptersCount} {b.chaptersCount === 1 ? 'Chapter' : 'Chapters'}
+                          </Text>
+                        </View>
+
+                        <View style={styles.bookCardRightBadge}>
+                          <ChevronRight size={18} color={isSelected ? '#D97706' : palette.textSecondary} />
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            ) : (
+              /* TAB 2: CHAPTER SELECTION */
+              <View style={styles.chaptersContainer}>
+                <View style={[styles.chapterBanner, { backgroundColor: palette.background, borderColor: palette.border }]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.chapterBannerText, { color: palette.textPrimary }]}>
+                      {getLocalizedBookName(selectedPickerBook.id, translation)}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: palette.textSecondary, marginTop: 2 }}>
+                      Select a chapter (1 to {selectedPickerBook.chaptersCount})
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    onPress={() => {
+                      triggerLightHaptic();
+                      setBookPickerTab('book');
+                    }}
+                    style={{ paddingVertical: 4, paddingHorizontal: 8 }}
+                  >
+                    <Text style={styles.changeBookBtnText}>‹ Change Book</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={true} contentContainerStyle={styles.chaptersGridWrap}>
+                  {Array.from({ length: selectedPickerBook.chaptersCount }, (_, i) => i + 1).map((ch) => {
+                    const isCurrent = currentBook.id === selectedPickerBook.id && currentChapter === ch;
+
+                    return (
+                      <TouchableOpacity
+                        key={`${selectedPickerBook.id}-ch-${ch}`}
+                        style={[
+                          styles.chapterTile,
+                          {
+                            borderColor: isCurrent ? '#D97706' : palette.border,
+                            backgroundColor: isCurrent ? '#D97706' : palette.background,
+                          },
+                        ]}
+                        onPress={() => {
+                          triggerSuccessHaptic();
+                          setLocation(selectedPickerBook.id, ch);
                           setIsBookPickerOpen(false);
                           clearVerseSelection();
                         }}
                       >
                         <Text
                           style={[
-                            styles.chapterChipText,
-                            b.id === currentBook.id && ch === currentChapter && styles.activeChapterChipText,
+                            styles.chapterTileText,
+                            { color: isCurrent ? '#FFFFFF' : palette.textPrimary },
+                            isCurrent && styles.activeChapterTileText,
                           ]}
                         >
                           {ch}
                         </Text>
                       </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-              ))}
-            </ScrollView>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            )}
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
 
       {/* MODAL 3: READING CONTROLS & TYPOGRAPHY SETTINGS */}
@@ -1298,36 +1505,152 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 13,
   },
-  bookRow: {
-    paddingVertical: 12,
-    borderBottomWidth: 1,
+  bookPickerContainer: {
+    maxWidth: 500,
+    width: '94%',
+    height: Math.min(680, Dimensions.get('window').height * 0.85),
+    alignSelf: 'center',
+    borderRadius: 24,
+    borderWidth: 1,
+    paddingTop: 16,
+    paddingBottom: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
   },
-  bookRowName: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 8,
+  segmentedTabRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    gap: 10,
   },
-  chapterGrid: {
+  segmentedTabBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
     gap: 6,
   },
-  chapterChip: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(156, 163, 175, 0.15)',
+  activeSegmentedTabBtn: {
+    backgroundColor: '#D97706',
+    borderColor: '#D97706',
+  },
+  segmentedTabBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  activeSegmentedTabBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+  testamentPillRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+    gap: 8,
+  },
+  testamentPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  activeTestamentPill: {
+    backgroundColor: '#D97706',
+    borderColor: '#D97706',
+  },
+  testamentPillText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  activeTestamentPillText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  booksList: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  bookCardItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  bookCardName: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  bookCardSubtext: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  bookCardRightBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  chaptersContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  chapterBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  chapterBannerText: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  changeBookBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#D97706',
+  },
+  chaptersGridWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    justifyContent: 'flex-start',
+    paddingBottom: 24,
+  },
+  chapterTile: {
+    width: '18%',
+    aspectRatio: 1,
+    minWidth: 48,
+    minHeight: 48,
+    borderRadius: 12,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  activeChapterChip: {
+  activeChapterTile: {
     backgroundColor: '#D97706',
+    borderColor: '#D97706',
   },
-  chapterChipText: {
-    fontSize: 14,
+  chapterTileText: {
+    fontSize: 15,
     fontWeight: '700',
-    color: '#6B7280',
   },
-  activeChapterChipText: {
+  activeChapterTileText: {
     color: '#FFFFFF',
+    fontWeight: '800',
   },
   settingLabel: {
     fontSize: 13,
