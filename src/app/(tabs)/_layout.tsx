@@ -234,13 +234,11 @@ export default function TabsLayout() {
         }}
       />
 
-      {/* Hide unused legacy tab files if present */}
+      {/* Hidden sub-screens */}
       <Tabs.Screen name="discover" options={{ href: null }} />
       <Tabs.Screen name="library" options={{ href: null }} />
       <Tabs.Screen name="search" options={{ href: null }} />
       <Tabs.Screen name="settings" options={{ href: null }} />
-      <Tabs.Screen name="rival" options={{ href: null }} />
-      <Tabs.Screen name="tasks" options={{ href: null }} />
     </Tabs>
   );
 }
