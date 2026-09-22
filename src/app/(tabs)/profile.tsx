@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Switch, StyleSheet, Modal, TextInput, Image, Linking } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Switch, StyleSheet, Modal, TextInput, Image, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useBibleStore } from '../../store/useBibleStore';
@@ -11,7 +11,7 @@ import {
   formatRepeatSummary,
 } from '../../services/reminderNotificationService';
 import { SpiritualTheme } from '../../constants/spiritualTheme';
-import { triggerLightHaptic } from '../../services/mobileHaptics';
+import { triggerLightHaptic, triggerSuccessHaptic } from '../../services/mobileHaptics';
 import {
   User,
   BookOpen,
@@ -41,6 +41,7 @@ import {
   CheckCircle2,
   ShieldCheck,
   LogOut,
+  Trash2,
 } from 'lucide-react-native';
 import { signOutUser } from '../../services/authService';
 
@@ -681,6 +682,41 @@ export default function ProfileScreen() {
               <View>
                 <Text style={[styles.menuText, { color: '#EF4444' }]}>Sign Out / Switch Account</Text>
                 <Text style={{ fontSize: 11, color: palette.textMuted, marginTop: 1 }}>Log out of this device or sign in with another account</Text>
+              </View>
+            </View>
+            <ChevronRight size={16} color={palette.textMuted} />
+          </TouchableOpacity>
+
+          <View style={[styles.divider, { backgroundColor: palette.border }]} />
+
+          <TouchableOpacity
+            onPress={() => {
+              triggerLightHaptic();
+              Alert.alert(
+                'Delete Account & Data',
+                'Are you sure you want to delete your account? All your personal notes, bookmarks, and streaks will be permanently erased. You may also contact selabibleapp@gmail.com for confirmation.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Delete Permanently',
+                    style: 'destructive',
+                    onPress: async () => {
+                      triggerSuccessHaptic();
+                      await signOutUser();
+                      updateUserProfile({ onboarded: false });
+                      router.replace('/login' as any);
+                    },
+                  },
+                ]
+              );
+            }}
+            style={styles.menuRow}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <Trash2 size={18} color="#DC2626" />
+              <View>
+                <Text style={[styles.menuText, { color: '#DC2626' }]}>Delete Account & Data</Text>
+                <Text style={{ fontSize: 11, color: palette.textMuted, marginTop: 1 }}>Permanently delete your account and personal data</Text>
               </View>
             </View>
             <ChevronRight size={16} color={palette.textMuted} />
