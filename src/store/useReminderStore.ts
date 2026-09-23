@@ -137,9 +137,9 @@ const INITIAL_REMINDERS: ReminderItem[] = [
   {
     id: 'rem-prayer-morning',
     type: 'prayer',
-    title: 'Morning Prayer',
-    message: 'Start your day with a moment of prayer and dedicate your steps to God.',
-    time: '06:30 AM',
+    title: 'Morning Prayer & Devotion',
+    message: 'Start your day with Scripture and dedicate your steps to Christ.',
+    time: '07:00 AM',
     repeat_type: 'daily',
     selected_days: [0, 1, 2, 3, 4, 5, 6],
     enabled: true,
@@ -150,28 +150,13 @@ const INITIAL_REMINDERS: ReminderItem[] = [
     updated_at: 1710000000000,
   },
   {
-    id: 'rem-bible-reading',
-    type: 'bible_reading',
-    title: 'Morning Bible Reading',
-    message: "Spend a few peaceful minutes with God's Word.",
-    time: '07:00 AM',
-    repeat_type: 'daily',
-    selected_days: [0, 1, 2, 3, 4, 5, 6],
-    enabled: true,
-    sound_enabled: true,
-    vibration_enabled: true,
-    destination: 'bible',
-    created_at: 1710000001000,
-    updated_at: 1710000001000,
-  },
-  {
     id: 'rem-prayer-afternoon',
     type: 'prayer',
-    title: 'Afternoon Prayer',
-    message: 'Pause and give thanks. Cast your midday stress on God.',
+    title: 'Midday Prayer & Grace',
+    message: 'Take a holy breath. Cast your midday stress on God.',
     time: '01:00 PM',
-    repeat_type: 'weekdays',
-    selected_days: [1, 2, 3, 4, 5],
+    repeat_type: 'daily',
+    selected_days: [0, 1, 2, 3, 4, 5, 6],
     enabled: true,
     sound_enabled: true,
     vibration_enabled: true,
@@ -180,10 +165,25 @@ const INITIAL_REMINDERS: ReminderItem[] = [
     updated_at: 1710000002000,
   },
   {
+    id: 'rem-prayer-evening',
+    type: 'devotional',
+    title: 'Evening Devotion & Walk',
+    message: 'Reflect on God’s goodness and review today’s Scripture journey.',
+    time: '07:00 PM',
+    repeat_type: 'daily',
+    selected_days: [0, 1, 2, 3, 4, 5, 6],
+    enabled: true,
+    sound_enabled: true,
+    vibration_enabled: true,
+    destination: 'verse_of_day',
+    created_at: 1710000003000,
+    updated_at: 1710000003000,
+  },
+  {
     id: 'rem-prayer-night',
     type: 'prayer',
-    title: 'Night Prayer',
-    message: 'Slow down and spend a quiet moment talking with God.',
+    title: 'Night Prayer & Peaceful Rest',
+    message: 'Slow down in gratitude and rest safely in His peace tonight.',
     time: '09:30 PM',
     repeat_type: 'daily',
     selected_days: [0, 1, 2, 3, 4, 5, 6],
@@ -191,21 +191,6 @@ const INITIAL_REMINDERS: ReminderItem[] = [
     sound_enabled: true,
     vibration_enabled: true,
     destination: 'prayer',
-    created_at: 1710000003000,
-    updated_at: 1710000003000,
-  },
-  {
-    id: 'rem-bible-study',
-    type: 'bible_reading',
-    title: 'Bible Study',
-    message: 'Your Bible study time is here. Take a moment to read and reflect.',
-    time: '08:00 PM',
-    repeat_type: 'specific_days',
-    selected_days: [2, 4, 6],
-    enabled: false,
-    sound_enabled: true,
-    vibration_enabled: true,
-    destination: 'study',
     created_at: 1710000004000,
     updated_at: 1710000004000,
   },
@@ -221,6 +206,7 @@ export interface ReminderState {
   checkDevicePermissions: () => Promise<DevicePermissionState>;
   requestDevicePermissions: () => Promise<boolean>;
   setMasterEnabled: (enabled: boolean) => Promise<void>;
+  toggleAllDailyRhythms: (enable?: boolean) => Promise<boolean>;
 
   addReminder: (
     reminder: Omit<ReminderItem, 'id' | 'created_at' | 'updated_at'>
@@ -275,9 +261,33 @@ export const useReminderStore = create<ReminderState>()(
       },
 
       setMasterEnabled: async (enabled: boolean) => {
-        set({ masterEnabled: enabled });
-        const { reminders } = get();
-        await rescheduleAllReminders(reminders, enabled);
+        const updated = get().reminders.map((r) => ({ ...r, enabled }));
+        set({ masterEnabled: enabled, reminders: updated });
+        await rescheduleAllReminders(updated, enabled);
+      },
+
+      toggleAllDailyRhythms: async (targetState?: boolean) => {
+        const current = get().masterEnabled;
+        const next = targetState !== undefined ? targetState : !current;
+
+        if (next) {
+          let permission = get().devicePermissionStatus;
+          if (permission !== 'granted') {
+            const granted = await get().requestDevicePermissions();
+            if (!granted) {
+              return false;
+            }
+          }
+          const updated = get().reminders.map((r) => ({ ...r, enabled: true }));
+          set({ masterEnabled: true, reminders: updated });
+          await rescheduleAllReminders(updated, true);
+          return true;
+        } else {
+          const updated = get().reminders.map((r) => ({ ...r, enabled: false }));
+          set({ masterEnabled: false, reminders: updated });
+          await rescheduleAllReminders(updated, false);
+          return false;
+        }
       },
 
       addReminder: async (data) => {

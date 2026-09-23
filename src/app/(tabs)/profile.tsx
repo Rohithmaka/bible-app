@@ -7,8 +7,6 @@ import { useSpiritualStore } from '../../store/useSpiritualStore';
 import { useReminderStore } from '../../store/useReminderStore';
 import {
   openDeviceNotificationSettings,
-  sendInstantTestNotification,
-  formatRepeatSummary,
 } from '../../services/reminderNotificationService';
 import { SpiritualTheme } from '../../constants/spiritualTheme';
 import { triggerLightHaptic, triggerSuccessHaptic } from '../../services/mobileHaptics';
@@ -51,13 +49,11 @@ export default function ProfileScreen() {
   const { user, updateUserProfile, todayScripture, privatePrayers, communityPrayers, bibleStudies, memoryVerses, storiesOfFaith } = useSpiritualStore();
 
   const {
-    reminders,
     masterEnabled,
-    setMasterEnabled,
     devicePermissionStatus,
     checkDevicePermissions,
     requestDevicePermissions,
-    toggleReminderEnabled,
+    toggleAllDailyRhythms,
   } = useReminderStore();
 
   useEffect(() => {
@@ -67,21 +63,6 @@ export default function ProfileScreen() {
   const [isNameModalOpen, setIsNameModalOpen] = useState(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const [editedName, setEditedName] = useState(user.displayName);
-  const [testNotificationFeedback, setTestNotificationFeedback] = useState<string | null>(null);
-
-  const prayerReminders = reminders.filter((r) => r.type === 'prayer');
-  const bibleReminders = reminders.filter((r) => r.type === 'bible_reading');
-  const activePrayerCount = prayerReminders.filter((r) => r.enabled).length;
-  const activeBibleCount = bibleReminders.filter((r) => r.enabled).length;
-
-  const handleTriggerTest = async (reminder: any) => {
-    triggerLightHaptic();
-    await sendInstantTestNotification(reminder);
-    setTestNotificationFeedback(`⚡ Preview sent: "${reminder.title}"!`);
-    setTimeout(() => {
-      setTestNotificationFeedback(null);
-    }, 3500);
-  };
 
   const isDark = themeMode === 'dark';
   const palette = isDark ? SpiritualTheme.dark : SpiritualTheme.light;
@@ -353,273 +334,183 @@ export default function ProfileScreen() {
 
           <View style={[styles.divider, { backgroundColor: palette.border }]} />
 
-          {/* Section 14: DEVICE NOTIFICATIONS PERMISSION STATUS */}
-          <View style={{ paddingVertical: 12 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Smartphone size={16} color={devicePermissionStatus === 'granted' ? '#10B981' : '#EF4444'} />
-                <Text style={{ fontSize: 14, fontWeight: '700', color: palette.textPrimary }}>
-                  Device Notifications
-                </Text>
-              </View>
-              <View style={{
-                paddingHorizontal: 8,
-                paddingVertical: 3,
-                borderRadius: 8,
-                backgroundColor: devicePermissionStatus === 'granted' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-              }}>
-                <Text style={{
-                  fontSize: 12,
-                  fontWeight: '700',
-                  color: devicePermissionStatus === 'granted' ? '#10B981' : '#EF4444',
+          {/* Section 14: SINGLE TAB DAILY SPIRITUAL REMINDERS (1-TAP PERMISSION & SCHEDULE) */}
+          <View style={{
+            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : '#FFFFFF',
+            borderRadius: 16,
+            padding: 16,
+            marginTop: 4,
+            marginBottom: 8,
+            borderWidth: 1,
+            borderColor: masterEnabled && devicePermissionStatus === 'granted'
+              ? 'rgba(5, 150, 105, 0.3)'
+              : palette.border,
+          }}>
+            {/* Master Row: Icon, Title & 1-Tap Toggle */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1, paddingRight: 8 }}>
+                <View style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 12,
+                  backgroundColor: masterEnabled && devicePermissionStatus === 'granted'
+                    ? 'rgba(5, 150, 105, 0.15)'
+                    : 'rgba(100, 116, 139, 0.12)',
+                  justifyContent: 'center',
+                  alignItems: 'center',
                 }}>
-                  {devicePermissionStatus === 'granted' ? '✓ Allowed' : '⚠ Not Allowed'}
-                </Text>
+                  <Bell size={20} color={masterEnabled && devicePermissionStatus === 'granted' ? palette.accentGreen : palette.textMuted} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={{ fontSize: 15, fontWeight: '700', color: palette.textPrimary }}>
+                      Daily Reminders
+                    </Text>
+                    {devicePermissionStatus === 'granted' && masterEnabled ? (
+                      <View style={{ backgroundColor: 'rgba(5, 150, 105, 0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                        <Text style={{ fontSize: 10, fontWeight: '700', color: palette.accentGreen }}>Active</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                  <Text style={{ fontSize: 12, color: palette.textMuted, marginTop: 2 }}>
+                    {masterEnabled && devicePermissionStatus === 'granted'
+                      ? 'Morning, Afternoon, Evening & Night'
+                      : devicePermissionStatus !== 'granted'
+                      ? 'Single tap to grant permission & activate'
+                      : 'All 4 daily reminders paused'}
+                  </Text>
+                </View>
               </View>
+
+              <Switch
+                value={masterEnabled && devicePermissionStatus === 'granted'}
+                onValueChange={async (val) => {
+                  triggerLightHaptic();
+                  if (val) {
+                    if (devicePermissionStatus !== 'granted') {
+                      const granted = await requestDevicePermissions();
+                      if (!granted) {
+                        openDeviceNotificationSettings();
+                        return;
+                      }
+                    }
+                    await toggleAllDailyRhythms(true);
+                  } else {
+                    await toggleAllDailyRhythms(false);
+                  }
+                }}
+                trackColor={{ false: palette.inputBg, true: palette.accentGreen }}
+              />
             </View>
 
-            {devicePermissionStatus !== 'granted' ? (
-              <View style={{
-                backgroundColor: 'rgba(239, 68, 68, 0.08)',
-                borderRadius: 10,
-                padding: 10,
-                marginTop: 6,
-                borderWidth: 1,
-                borderColor: 'rgba(239, 68, 68, 0.25)',
-              }}>
-                <Text style={{ fontSize: 12, color: '#DC2626', marginBottom: 8, lineHeight: 17 }}>
-                  Your reminders cannot be delivered because notification permissions are turned off on your Android device.
-                </Text>
+            {/* When Active: Clean 4-Portion Daily Rhythm Pills (Morning, Afternoon, Evening, Night) */}
+            {masterEnabled && devicePermissionStatus === 'granted' ? (
+              <View style={{ marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: palette.border }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 6 }}>
+                  {/* Morning */}
+                  <View style={{
+                    flex: 1,
+                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.02)',
+                    paddingVertical: 10,
+                    paddingHorizontal: 6,
+                    borderRadius: 10,
+                    alignItems: 'center',
+                    borderWidth: 1,
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)',
+                  }}>
+                    <Text style={{ fontSize: 16, marginBottom: 2 }}>🌅</Text>
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: palette.textPrimary }}>Morning</Text>
+                    <Text style={{ fontSize: 10, color: palette.accentGreen, fontWeight: '600', marginTop: 1 }}>07:00 AM</Text>
+                    <Text style={{ fontSize: 9, color: palette.textMuted }}>Prayer</Text>
+                  </View>
+
+                  {/* Afternoon */}
+                  <View style={{
+                    flex: 1,
+                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.02)',
+                    paddingVertical: 10,
+                    paddingHorizontal: 6,
+                    borderRadius: 10,
+                    alignItems: 'center',
+                    borderWidth: 1,
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)',
+                  }}>
+                    <Text style={{ fontSize: 16, marginBottom: 2 }}>☀️</Text>
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: palette.textPrimary }}>Midday</Text>
+                    <Text style={{ fontSize: 10, color: palette.accentGreen, fontWeight: '600', marginTop: 1 }}>01:00 PM</Text>
+                    <Text style={{ fontSize: 9, color: palette.textMuted }}>Pause</Text>
+                  </View>
+
+                  {/* Evening */}
+                  <View style={{
+                    flex: 1,
+                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.02)',
+                    paddingVertical: 10,
+                    paddingHorizontal: 6,
+                    borderRadius: 10,
+                    alignItems: 'center',
+                    borderWidth: 1,
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)',
+                  }}>
+                    <Text style={{ fontSize: 16, marginBottom: 2 }}>🌇</Text>
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: palette.textPrimary }}>Evening</Text>
+                    <Text style={{ fontSize: 10, color: palette.accentGreen, fontWeight: '600', marginTop: 1 }}>07:00 PM</Text>
+                    <Text style={{ fontSize: 9, color: palette.textMuted }}>Devotion</Text>
+                  </View>
+
+                  {/* Night */}
+                  <View style={{
+                    flex: 1,
+                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.02)',
+                    paddingVertical: 10,
+                    paddingHorizontal: 6,
+                    borderRadius: 10,
+                    alignItems: 'center',
+                    borderWidth: 1,
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)',
+                  }}>
+                    <Text style={{ fontSize: 16, marginBottom: 2 }}>🌙</Text>
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: palette.textPrimary }}>Night</Text>
+                    <Text style={{ fontSize: 10, color: palette.accentGreen, fontWeight: '600', marginTop: 1 }}>09:30 PM</Text>
+                    <Text style={{ fontSize: 9, color: palette.textMuted }}>Rest</Text>
+                  </View>
+                </View>
+
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10 }}>
+                  <Check size={13} color={palette.accentGreen} />
+                  <Text style={{ fontSize: 11, color: palette.accentGreen, fontWeight: '600' }}>
+                    All 4 daily reminders granted & scheduled on this device
+                  </Text>
+                </View>
+              </View>
+            ) : devicePermissionStatus !== 'granted' ? (
+              <View style={{ marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: palette.border }}>
                 <TouchableOpacity
                   activeOpacity={0.8}
                   onPress={async () => {
                     triggerLightHaptic();
                     const granted = await requestDevicePermissions();
-                    if (!granted) {
+                    if (granted) {
+                      await toggleAllDailyRhythms(true);
+                    } else {
                       openDeviceNotificationSettings();
                     }
                   }}
                   style={{
-                    backgroundColor: '#EF4444',
-                    paddingVertical: 8,
-                    borderRadius: 8,
+                    backgroundColor: palette.accentGreen,
+                    paddingVertical: 10,
+                    paddingHorizontal: 14,
+                    borderRadius: 10,
                     alignItems: 'center',
                   }}
                 >
                   <Text style={{ fontSize: 13, fontWeight: '700', color: '#FFFFFF' }}>
-                    Enable Device Notifications
+                    Enable All 4 Daily Reminders (1-Tap Permission)
                   </Text>
                 </TouchableOpacity>
               </View>
-            ) : (
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => {
-                  triggerLightHaptic();
-                  openDeviceNotificationSettings();
-                }}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}
-              >
-                <Text style={{ fontSize: 12, color: palette.accentGreen, fontWeight: '600' }}>
-                  Manage Android App Notification Settings →
-                </Text>
-              </TouchableOpacity>
-            )}
+            ) : null}
           </View>
-
-          <View style={[styles.divider, { backgroundColor: palette.border }]} />
-
-          {/* Master Switch for Spiritual Reminders */}
-          <View style={styles.menuRow}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1, paddingRight: 8 }}>
-              <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(5, 150, 105, 0.12)', justifyContent: 'center', alignItems: 'center' }}>
-                <Bell size={18} color={palette.accentGreen} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.menuText, { color: palette.textPrimary }]}>Daily Spiritual Reminders</Text>
-                <Text style={{ fontSize: 11, color: palette.textMuted }}>
-                  {masterEnabled ? 'Scheduled & active on this device' : 'All reminders paused'}
-                </Text>
-              </View>
-            </View>
-            <Switch
-              value={masterEnabled}
-              onValueChange={(val) => {
-                triggerLightHaptic();
-                setMasterEnabled(val);
-              }}
-              trackColor={{ false: palette.inputBg, true: palette.accentGreen }}
-            />
-          </View>
-
-          {/* Fully Customizable Reminders Hub Card */}
-          {masterEnabled ? (
-            <View style={{
-              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
-              borderRadius: 14,
-              padding: 14,
-              marginBottom: 12,
-              borderWidth: 1,
-              borderColor: palette.border,
-            }}>
-              {/* Counts & Status Summary */}
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                <Text style={{ fontSize: 11, fontWeight: '800', color: palette.textSecondary, textTransform: 'uppercase', letterSpacing: 0.8 }}>
-                  Active Reminders
-                </Text>
-                <Text style={{ fontSize: 11, fontWeight: '700', color: palette.accentGold }}>
-                  🙏 {activePrayerCount} Prayer • 📖 {activeBibleCount} Bible
-                </Text>
-              </View>
-
-              {/* Primary Call to Action: Open Full Reminder Center */}
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={() => {
-                  triggerLightHaptic();
-                  router.push('/reminders');
-                }}
-                style={{
-                  backgroundColor: isDark ? 'rgba(217, 119, 6, 0.15)' : 'rgba(217, 119, 6, 0.1)',
-                  borderRadius: 12,
-                  paddingVertical: 12,
-                  paddingHorizontal: 14,
-                  borderWidth: 1,
-                  borderColor: isDark ? 'rgba(217, 119, 6, 0.4)' : 'rgba(217, 119, 6, 0.25)',
-                  marginBottom: 12,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, paddingRight: 8 }}>
-                  <Sparkles size={18} color="#D97706" />
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '800', color: '#D97706' }}>
-                      Customize & Manage Reminders
-                    </Text>
-                    <Text style={{ fontSize: 11, color: palette.textSecondary, marginTop: 1 }}>
-                      Add, edit, duplicate, set repeat days & custom messages
-                    </Text>
-                  </View>
-                </View>
-                <ChevronRight size={18} color="#D97706" />
-              </TouchableOpacity>
-
-              {/* Quick List Preview of Top Reminders */}
-              <View style={{ gap: 8 }}>
-                {reminders.slice(0, 5).map((reminder) => (
-                  <View
-                    key={reminder.id}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      backgroundColor: palette.card,
-                      borderRadius: 10,
-                      paddingVertical: 8,
-                      paddingHorizontal: 10,
-                      borderWidth: 1,
-                      borderColor: palette.border,
-                    }}
-                  >
-                    <TouchableOpacity
-                      activeOpacity={0.7}
-                      onPress={() => {
-                        triggerLightHaptic();
-                        router.push('/reminders');
-                      }}
-                      style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, paddingRight: 8 }}
-                    >
-                      <Text style={{ fontSize: 16 }}>{reminder.type === 'prayer' ? '🙏' : '📖'}</Text>
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 13, fontWeight: '700', color: palette.textPrimary }} numberOfLines={1}>
-                          {reminder.title}
-                        </Text>
-                        <Text style={{ fontSize: 11, color: palette.accentGreen, fontWeight: '600' }}>
-                          🕒 {reminder.time} • {formatRepeatSummary(reminder.repeat_type, reminder.selected_days)}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <TouchableOpacity
-                        activeOpacity={0.7}
-                        onPress={() => handleTriggerTest(reminder)}
-                        style={{
-                          paddingHorizontal: 7,
-                          paddingVertical: 3,
-                          borderRadius: 6,
-                          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
-                        }}
-                      >
-                        <Text style={{ fontSize: 10, fontWeight: '700', color: palette.textSecondary }}>Test</Text>
-                      </TouchableOpacity>
-
-                      <Switch
-                        value={reminder.enabled}
-                        onValueChange={() => {
-                          triggerLightHaptic();
-                          toggleReminderEnabled(reminder.id);
-                        }}
-                        trackColor={{ false: palette.inputBg, true: palette.accentGreen }}
-                        style={{ transform: [{ scaleX: 0.75 }, { scaleY: 0.75 }] }}
-                      />
-                    </View>
-                  </View>
-                ))}
-              </View>
-
-              {/* Quick Add Buttons */}
-              <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() => {
-                    triggerLightHaptic();
-                    router.push({ pathname: '/reminders', params: { action: 'add', type: 'prayer' } });
-                  }}
-                  style={{
-                    flex: 1,
-                    backgroundColor: isDark ? 'rgba(245, 158, 11, 0.15)' : 'rgba(245, 158, 11, 0.1)',
-                    borderRadius: 8,
-                    paddingVertical: 7,
-                    alignItems: 'center',
-                    borderWidth: 1,
-                    borderColor: 'rgba(245, 158, 11, 0.3)',
-                  }}
-                >
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#F59E0B' }}>+ Prayer Reminder</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() => {
-                    triggerLightHaptic();
-                    router.push({ pathname: '/reminders', params: { action: 'add', type: 'bible' } });
-                  }}
-                  style={{
-                    flex: 1,
-                    backgroundColor: isDark ? 'rgba(37, 99, 235, 0.15)' : 'rgba(37, 99, 235, 0.1)',
-                    borderRadius: 8,
-                    paddingVertical: 7,
-                    alignItems: 'center',
-                    borderWidth: 1,
-                    borderColor: 'rgba(37, 99, 235, 0.3)',
-                  }}
-                >
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#2563EB' }}>+ Bible Reminder</Text>
-                </TouchableOpacity>
-              </View>
-
-              {testNotificationFeedback ? (
-                <View style={{ marginTop: 10, padding: 8, backgroundColor: 'rgba(5, 150, 105, 0.15)', borderRadius: 8 }}>
-                  <Text style={{ fontSize: 11, color: palette.accentGreen, fontWeight: '600', textAlign: 'center' }}>
-                    {testNotificationFeedback}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-          ) : null}
 
           <View style={[styles.divider, { backgroundColor: palette.border }]} />
 
