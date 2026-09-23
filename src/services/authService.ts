@@ -222,6 +222,27 @@ export async function signUpWithEmail(
 }
 
 /**
+ * Resends the email verification confirmation link.
+ */
+export async function resendVerificationEmail(email: string): Promise<{ success: boolean; error?: string }> {
+  if (!isSupabaseConfigured()) {
+    return { success: false, error: 'Supabase is not configured' };
+  }
+  try {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email.trim(),
+    });
+    if (error) {
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e.message || 'Failed to resend confirmation email' };
+  }
+}
+
+/**
  * Sign in with Google via Supabase OAuth.
  */
 export async function signInWithGoogle(): Promise<{ user: AuthUserProfile | null; error?: string }> {

@@ -19,6 +19,8 @@ import { SpiritualTheme } from '../constants/spiritualTheme';
 import {
   signInWithEmail,
   signUpWithEmail,
+  signInAsGuest,
+  resendVerificationEmail,
   hasCompletedOnboarding,
 } from '../services/authService';
 import { triggerLightHaptic } from '../services/mobileHaptics';
@@ -47,6 +49,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
+  const [resendingEmail, setResendingEmail] = useState(false);
 
   const navigateNext = () => {
     triggerLightHaptic();
@@ -54,6 +57,34 @@ export default function LoginScreen() {
       router.replace('/(tabs)');
     } else {
       router.replace('/onboarding-flow');
+    }
+  };
+
+  const handleResendEmail = async () => {
+    if (!email.trim()) {
+      setErrorMessage('Please enter your email address to resend confirmation.');
+      return;
+    }
+    setResendingEmail(true);
+    triggerLightHaptic();
+    const res = await resendVerificationEmail(email);
+    setResendingEmail(false);
+    if (res.success) {
+      setInfoMessage('✓ Confirmation email resent! Please check your inbox and spam folder.');
+      setErrorMessage(null);
+    } else {
+      setErrorMessage(res.error || 'Failed to resend confirmation email.');
+    }
+  };
+
+  const handleContinueAsGuest = async () => {
+    triggerLightHaptic();
+    setLoading(true);
+    try {
+      await signInAsGuest(name.trim() || email.split('@')[0] || 'Believer');
+      navigateNext();
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -182,8 +213,54 @@ export default function LoginScreen() {
           {/* Feedback Banners */}
           {errorMessage && (
             <View style={[styles.alertBanner, { backgroundColor: '#FEE2E2', borderColor: '#F87171' }]}>
-              <AlertCircle size={18} color="#DC2626" style={{ marginRight: 8 }} />
-              <Text style={[styles.alertText, { color: '#991B1B' }]}>{errorMessage}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                <AlertCircle size={18} color="#DC2626" style={{ marginRight: 8, marginTop: 2 }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.alertText, { color: '#991B1B', fontWeight: '700' }]}>{errorMessage}</Text>
+                  {errorMessage.toLowerCase().includes('email not confirmed') && (
+                    <Text style={{ fontSize: 12, color: '#7F1D1D', marginTop: 4, lineHeight: 17 }}>
+                      A verification link was sent to your email. Check your inbox & spam folder, or tap below to resend.
+                    </Text>
+                  )}
+                </View>
+              </View>
+
+              {errorMessage.toLowerCase().includes('email not confirmed') && (
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: 'rgba(239, 68, 68, 0.25)' }}>
+                  <TouchableOpacity
+                    onPress={handleResendEmail}
+                    disabled={resendingEmail}
+                    style={{
+                      flex: 1,
+                      backgroundColor: '#DC2626',
+                      paddingVertical: 7,
+                      borderRadius: 8,
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#FFFFFF' }}>
+                      {resendingEmail ? 'Sending...' : 'Resend Link'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={handleContinueAsGuest}
+                    style={{
+                      flex: 1,
+                      backgroundColor: '#FFFFFF',
+                      paddingVertical: 7,
+                      borderRadius: 8,
+                      alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: '#DC2626',
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#DC2626' }}>
+                      Enter as Guest →
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           )}
 
@@ -284,6 +361,19 @@ export default function LoginScreen() {
                   : 'Already have an account? Sign In'}
               </Text>
             </TouchableOpacity>
+
+            {/* Instant Guest Access */}
+            <View style={{ alignItems: 'center', marginTop: 14, paddingTop: 10, borderTopWidth: 1, borderTopColor: palette.border }}>
+              <TouchableOpacity
+                onPress={handleContinueAsGuest}
+                activeOpacity={0.7}
+                style={{ paddingVertical: 4, paddingHorizontal: 12 }}
+              >
+                <Text style={{ fontSize: 13, color: palette.textSecondary, fontWeight: '500' }}>
+                  Or explore first • <Text style={{ color: palette.accentGreen, fontWeight: '700' }}>Continue as Guest →</Text>
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Privacy & Sacred Trust Badge */}
